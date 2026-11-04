@@ -1,7 +1,7 @@
 # study_anki
 
 A single, reusable workflow for turning source material into validated Anki
-decks. OpenClaw may start with notes, Markdown, PDFs, textbooks, or raw text,
+decks. [AI Agent] may start with notes, Markdown, PDFs, textbooks, or raw text,
 but the canonical builder consumes one JSON deck specification and produces
 one Anki package.
 
