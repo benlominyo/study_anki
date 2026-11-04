@@ -182,6 +182,25 @@ def has_tier2(back: str) -> bool:
     return bool(re.search(r'class="[^"]*\btier2\b[^"]*"', back))
 
 
+def tier2_paragraph_counts(back: str) -> tuple[int, int]:
+    """Count authored tier-2 spans in the two explanatory paragraphs."""
+    paragraphs = re.findall(r"<p\b[^>]*>(.*?)</p\s*>", back, flags=re.IGNORECASE | re.DOTALL)
+    counts: list[int] = []
+    for paragraph in paragraphs[:2]:
+        counts.append(
+            len(
+                re.findall(
+                    r'<span\b[^>]*class="[^"]*\btier2\b[^"]*"',
+                    paragraph,
+                    flags=re.IGNORECASE,
+                )
+            )
+        )
+    while len(counts) < 2:
+        counts.append(0)
+    return counts[0], counts[1]
+
+
 class CardValidationError(ValueError):
     """Raised when a card cannot satisfy the final export contract."""
 
@@ -285,8 +304,9 @@ def normalize_card(card: dict[str, Any], *, deck_name: str, card_index: int) -> 
     back = str(card["back"])
     if not front:
         raise _card_error(deck_name, card_index, "front must be non-empty")
-    if _meaningful_paragraph_count(back) < 2:
-        raise _card_error(deck_name, card_index, "back must contain at least two meaningful <p> paragraphs")
+    paragraph_count = _meaningful_paragraph_count(back)
+    if paragraph_count != 2:
+        raise _card_error(deck_name, card_index, f"back must contain exactly two meaningful <p> paragraphs; found {paragraph_count}")
 
     hooks = _recall_hook_matches(back)
     if len(hooks) > 1:
@@ -315,8 +335,9 @@ def normalize_card(card: dict[str, Any], *, deck_name: str, card_index: int) -> 
 
 
 def validate_normalized_card(card: dict[str, Any], *, deck_name: str, card_index: int) -> None:
-    if _meaningful_paragraph_count(str(card["back"])) < 2:
-        raise _card_error(deck_name, card_index, "normalized back has fewer than two meaningful paragraphs")
+    paragraph_count = _meaningful_paragraph_count(str(card["back"]))
+    if paragraph_count != 2:
+        raise _card_error(deck_name, card_index, f"normalized back must contain exactly two meaningful <p> paragraphs; found {paragraph_count}")
     hooks = _recall_hook_matches(str(card["back"]))
     if len(hooks) != 1 or _recall_hook_color(hooks[0]) not in RECALL_HOOK_COLORS:
         raise _card_error(deck_name, card_index, "normalized card must have exactly one approved Recall hook")
@@ -485,6 +506,7 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
     total_cards = len(cards)
     cards_with_images = 0
     cards_with_tier2 = 0
+    cards_with_tier2_in_both_paragraphs = 0
     cards_with_key = 0
     distinct_images: set[str] = set()
 
@@ -503,6 +525,9 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
             cards_with_key += 1
         if has_tier2(back) or has_key or "tier2" in [str(tag) for tag in entry.get("tags", [])]:
             cards_with_tier2 += 1
+        paragraph_tier2 = tier2_paragraph_counts(back)
+        if all(count > 0 for count in paragraph_tier2):
+            cards_with_tier2_in_both_paragraphs += 1
 
         images = [normalize_image(value) for value in entry.get("images", [])]
         if images:
@@ -527,6 +552,7 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
         "cards_with_images": cards_with_images,
         "cards_with_key": cards_with_key,
         "cards_with_tier2": cards_with_tier2,
+        "cards_with_tier2_in_both_paragraphs": cards_with_tier2_in_both_paragraphs,
         "distinct_images": len(distinct_images),
     }
 
@@ -653,6 +679,7 @@ def main() -> int:
     print(f"Cards: {summary['cards']}")
     print(f"Cards with images: {summary['cards_with_images']}")
     print(f"Cards with tier-2 highlights: {summary['cards_with_tier2']}")
+    print(f"Cards with tier-2 highlights in both paragraphs: {summary['cards_with_tier2_in_both_paragraphs']}")
     return 0
 
 
