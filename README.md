@@ -59,16 +59,17 @@ then validates the normalized result. It fails loudly with a
 success-shaped package containing a malformed card. Each card must have:
 
 - a non-empty, context-complete front;
-- at least two meaningful explanatory `<p>` paragraphs in the back;
+- exactly two meaningful explanatory `<p>` paragraphs in the authored back;
 - exactly one Recall hook using blue, red, purple, or navy;
 - exactly one non-empty, actionable NB footer inferred from the card's concept;
 - preserved tags, valid HTML, images, equations, key-term markup, and tier-2
   styling.
 
-The Recall-hook palette is independent from tier-2 highlighting. Tier-2
+The Recall-hook palette is independent from tier-2 highlighting. Distribute tier-2 highlights across both authored paragraphs: include at least one distinct high-yield term in each paragraph when the source supports it, preferably two or three useful terms total per card. Do not highlight filler or repeat terms to meet a count. The builder's automatic styling is only a fallback and does not guarantee paragraph-level distribution. Tier-2
 styling retains its existing palette, including green, gold, pink, orange,
 purple, and teal.
-The builder does not rewrite card meaning, remove valid HTML, or remove
+The builder rejects backs with fewer or more than two meaningful `<p>`
+paragraphs. It does not rewrite card meaning, remove valid HTML, or remove
 referenced media.
 
 ## Card metadata
@@ -110,3 +111,8 @@ not already present in the back. See
 [`DECK_SPEC_TEMPLATE.md`](DECK_SPEC_TEMPLATE.md) for the authoring contract
 and [`ANKI_CARD_GENERATION_PROMPT.md`](ANKI_CARD_GENERATION_PROMPT.md) for
 the OpenClaw generation instructions.
+
+## License
+
+Copyright (c) 2026 benlominyo. Released under the [MIT License](LICENSE).
+If you use or adapt this work, please keep the copyright notice and credit the original author.

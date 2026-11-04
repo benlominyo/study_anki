@@ -27,8 +27,10 @@ Card constraints:
 5. Make the answer self-contained. State the defining relationship, mechanism,
    condition, or implication explicitly rather than relying on pronouns such
    as “it” or “this.”
-6. Prefer one or two focused paragraphs. Use a short, parallel bullet list
-   only when the source concept is intrinsically an ordered set or contrast.
+6. Write exactly two focused paragraphs in the back, no more and no fewer.
+   Paragraph 1 states the definition, model, mechanism, or procedure.
+   Paragraph 2 adds a distinct consequence, contrast, limitation, or
+   application. Do not use additional paragraph elements for lists.
 7. Preserve technical notation, units, thresholds, named methods, and causal
    direction exactly.
 8. Avoid slang, conversational fillers, rhetorical questions, unexplained
@@ -37,7 +39,7 @@ Card constraints:
    `recall_hook` metadata object when the back does not already contain a
    valid hook. Its text must use the same formal register, summarize only the
    card’s single concept, and introduce no additional fact. Recall hooks may
-   use only blue, red, purple, navy, or orange.
+   use only blue, red, purple, or navy.
 10. Preserve the requested JSON/schema, tags, deck structure, HTML fields, and
    export options exactly. Do not add metadata to the answer field.
 11. Every card must contain exactly one NB footer. Always use
@@ -59,6 +61,50 @@ Card constraints:
     dbt, Git, GitHub Actions, Linux and Bash, Docker, Jupyter, Quarto, REST
     and JSON tools, C, C++, Java, JavaScript, and domain tools such as NONMEM,
     Monolix, Phoenix WinNonlin, REDCap, QGIS, and ImageJ.
+
+NB selection guide: use the compact concept-family registry in
+`deck_spec_helpers.py` as a lookup, not as a source of generic boilerplate.
+Choose an operation that genuinely illuminates the card, vary ecosystems and
+operations across the deck, and keep every NB in the card's `nb` metadata.
+If no registry family fits, choose a truthful adjacent workflow from the
+ecosystem list above; never omit the NB.
+
+Use the fixed card-shape templates from `deck_spec_helpers.py`: paragraph 1
+states the core definition/model/mechanism/procedure; paragraph 2 adds a
+distinct implication/contrast/limitation/application; the Recall hook is one
+fresh concise sentence; the NB names one concrete action. Treat these as
+structural templates, not fixed prose to copy verbatim.
+
+Generate the complete requested deck specification in one pass. Return only
+the JSON object, with no preface, progress text, explanation, or trailing
+commentary. Put the two authored prose paragraphs in `back`; keep Recall hook
+and NB content in their metadata fields so the builder can render each once
+outside those paragraphs.
+
+In each card, distribute tier-2 highlights across both authored prose paragraphs:
+mark at least one distinct, high-yield term in paragraph 1 and at least one
+distinct, high-yield term in paragraph 2 when the source supports them. Prefer
+two or three total highlights per card when that many genuinely useful terms
+are present. Do not highlight filler, repeat a term merely to satisfy a count,
+or make the highlights replace the prose. Choose terms that aid retrieval and
+apply varied soft tier-2 colors across the deck. The builder may ensure that a
+card has some tier-2 styling, but it does not guarantee distribution between
+the two paragraphs; author that distribution directly in the spec.
+
+Card-budget gate: derive the deck size from distinct concepts actually supported
+by the source; do not pad the deck with duplicates, thin paraphrases, or
+unsupported claims. For "exactly N", include N source-supported cards; if
+the source cannot support N, stop and report the supported count rather than
+fabricate cards. For "at least N", treat N as a minimum, meet it when the
+source supports it, and do not add weak cards merely to exceed it. For an
+unspecified count, use the source-supported concept budget without padding.
+Before
+writing each card, identify one concept-specific actionable NB operation. If
+no direct computational operation fits, narrow the concept and select a
+truthful adjacent workflow (such as inspecting, querying, visualizing,
+simulating, validating, or transforming relevant data). Never omit the NB
+metadata block. The builder validates the completed spec; it does not decide
+how many concepts the source supports.
 
 Before returning the cards, perform this editorial check:
 - Is each front a complete, context-complete question?

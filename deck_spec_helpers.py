@@ -57,104 +57,50 @@ def nb(text: str) -> str:
     return f'<div class="nb"><strong>NB:</strong> {text}</div>'
 
 
-_NB_RULES: list[tuple[set[str], str]] = [
-    (
-        {"survey", "questionnaire", "kobocollect", "data entry", "missing"},
-        "KoboCollect helps capture field data; in R, `janitor::clean_names()` and `naniar::vis_miss()` help clean and inspect missingness.",
-    ),
-    (
-        {"civil registration", "vital registration", "census", "population register", "demographic data", "survey"},
-        "In R, `tidycensus::get_decennial()` is useful for census data and `survey::svydesign()` helps analyze complex survey samples.",
-    ),
-    (
-        {"selection bias", "matching", "propensity score", "balance", "propensity", "stratification"},
-        "In R, `MatchIt::matchit()` pairs subjects and `cobalt::bal.tab()` checks covariate balance after adjustment.",
-    ),
-    (
-        {"measurement bias", "validity", "reliability", "misclassification", "inter-rater", "internal consistency", "test-retest"},
-        "In R, `psych::alpha()` checks internal consistency and `irr::kappa2()` helps with agreement checks.",
-    ),
-    (
-        {"reporting bias", "publication bias"},
-        "In R, `metafor::trimfill()` and funnel plots can help inspect publication bias.",
-    ),
-    (
-        {"recall bias"},
-        "In R, `dplyr::count()` and `ggplot2::geom_col()` help compare recall patterns by group.",
-    ),
-    (
-        {"confounding bias", "back-door path", "confounding"},
-        "In R, `fixest::feols()` with covariates and `sandwich::vcovHC()` for robust SEs are common adjustment tools.",
-    ),
-    (
-        {"causal inference", "regression", "adjustment", "sensitivity"},
-        "In R, `fixest::feols()` and `lmtest::coeftest()` are useful for adjusted regression and quick robustness checks.",
-    ),
-    (
-        {"instrumental variables", "instrumental variable", "endogeneity", "exogeneity", "relevance", "2sls", "iv"},
-        "In R, `AER::ivreg()` or `ivreg::ivreg()` fits 2SLS models, and `sandwich::vcovHC()` adds robust standard errors.",
-    ),
-    (
-        {"sample size", "power"},
-        "In R, `pwr::pwr.t.test()` is a simple starting point for power and sample-size planning.",
-    ),
-    (
-        {"sample size", "threshold", "sequence", "ordered list", "exact number", "count", "number of"},
-        "When the exact count or order matters, a phonetic-number or peg-word cue can make the number itself easier to recall.",
-    ),
-    (
-        {"survival analysis", "censoring", "kaplan-meier", "survivor curve", "risk set", "median survival", "time-to-event"},
-        "In R, `survival::Surv()` stores follow-up and censoring, and `survival::survfit()` estimates Kaplan-Meier curves.",
-    ),
-    (
-        {"right censoring", "left censoring", "interval censoring", "survival function", "event indicator", "time-to-event"},
-        "In R, `survival::Surv(time, status)` is the standard way to encode censored time-to-event data before fitting survival models.",
-    ),
-    (
-        {"infectious disease", "infectious diseases", "mathematical modeling", "sir", "seir", "compartmental", "differential equation", "epidemic"},
-        "In R, `deSolve::ode()` is a common way to simulate compartmental differential-equation models like SIR.",
-    ),
-    (
-        {"force of infection", "density-dependent", "frequency-dependent", "mass-action", "proportionate mixing", "recovery", "infectious period"},
-        "In R, `deSolve::ode()` is useful for exploring force-of-infection models, and `ggplot2` helps visualize density- versus frequency-dependent transmission curves.",
-    ),
-    (
-        {"stationary", "stationarity", "autocovariance", "autocorrelation", "correlogram", "time series", "acf", "random walk", "seasonal"},
-        "In R, `forecast` and `tseries` are useful for stationarity checks, while `acf()` and `pacf()` help inspect serial correlation.",
-    ),
-    (
-        {"autoregressive", "moving average", "arma", "arima", "airpassengers", "differencing", "time series models"},
-        "In R, `forecast::Arima()` and `forecast::auto.arima()` are the usual tools for fitting ARIMA-style time series models.",
-    ),
-    (
-        {"moving average", "ma(1)", "ma(2)", "arma", "arima", "invertibility", "white noise", "residual"},
-        "In R, `forecast::Arima()` handles ARMA/ARIMA workflows, and `acf()` helps inspect the moving-average cut-off pattern.",
-    ),
-    (
-        {"arima", "differences", "differencing", "stationary", "stationarity", "time series model selection"},
-        "In R, `forecast::auto.arima()` helps compare stationary and differenced models, and `diff()` is useful for removing trend.",
-    ),
-    (
-        {"machine learning", "ml", "prediction", "modeling", "classification"},
-        "In Python, `scikit-learn` pipelines with `train_test_split()` and cross-validation are standard for prediction workflows.",
-    ),
-    (
-        {"data science", "analytics"},
-        "In R, `dplyr` and `ggplot2`; in Python, `pandas` and `seaborn` are the usual cleaning and visualization stack.",
-    ),
-]
+_NB_RULES: tuple[dict[str, Any], ...] = (
+    {"family": "missingness", "terms": ("missing", "missingness", "incomplete data"), "tools": ("naniar::vis_miss()", "pandas.DataFrame.isna()", "SQL IS NULL"), "action": "visualize or summarize missing values"},
+    {"family": "data-cleaning", "terms": ("data cleaning", "data entry", "questionnaire", "survey"), "tools": ("janitor::clean_names()", "pandas.DataFrame.rename()", "Power Query"), "action": "standardize field names and inspect malformed records"},
+    {"family": "descriptive-statistics", "terms": ("mean", "median", "variance", "distribution", "descriptive"), "tools": ("numpy.mean()", "R summary()", "Excel PivotTable"), "action": "calculate and compare the relevant summary statistic"},
+    {"family": "visualization", "terms": ("plot", "graph", "visualization", "trend", "contrast"), "tools": ("ggplot2", "seaborn", "Tableau"), "action": "visualize the stated comparison or trend"},
+    {"family": "regression", "terms": ("regression", "linear model", "coefficient", "prediction"), "tools": ("statsmodels OLS", "R lm()", "SAS PROC REG"), "action": "fit the specified model and inspect its coefficients or predictions"},
+    {"family": "causal-inference", "terms": ("causal", "confounding", "adjustment", "propensity", "instrumental variable"), "tools": ("Stata teffects", "MatchIt::matchit()", "Python linearmodels"), "action": "estimate the relevant adjusted contrast and inspect balance or assumptions"},
+    {"family": "survival", "terms": ("survival", "censoring", "kaplan-meier", "time-to-event", "hazard"), "tools": ("SAS PROC LIFETEST", "lifelines KaplanMeierFitter", "survival::survfit()"), "action": "encode event time and censoring, then estimate or plot the survival curve"},
+    {"family": "longitudinal", "terms": ("longitudinal", "repeated measures", "within-subject", "covariance structure"), "tools": ("nlme::gls()", "SAS PROC MIXED", "statsmodels MixedLM"), "action": "fit a repeated-measures model and inspect the within-subject covariance"},
+    {"family": "simulation", "terms": ("simulation", "differential equation", "compartment", "stochastic"), "tools": ("Julia DifferentialEquations.jl", "deSolve::ode()", "scipy.integrate.solve_ivp()"), "action": "simulate the stated system and inspect its trajectory"},
+    {"family": "database-query", "terms": ("database", "query", "cohort extraction", "record linkage"), "tools": ("PostgreSQL window functions", "dbt tests", "PySpark DataFrame API"), "action": "query or validate the records needed for the stated analysis"},
+    {"family": "reproducibility", "terms": ("reproducibility", "workflow", "version control", "analysis pipeline"), "tools": ("Git", "Quarto", "GitHub Actions"), "action": "record and rerun the analysis steps reproducibly"},
+)
+
+CARD_TEMPLATES: dict[str, str] = {
+    "paragraph_1": "Define the concept or state its model, mechanism, or procedure with necessary assumptions and notation.",
+    "paragraph_2": "Add one distinct consequence, contrast, limitation, interpretation, or application.",
+    "recall_hook": "Write one concise sentence that restates the central insight in fresh words; use only an approved hook color.",
+    "nb": "Name one concrete ecosystem-specific operation and say what to run or inspect; keep it short and concept-specific.",
+}
+
+
+def infer_nb_rule(
+    front: str,
+    back: str,
+    tags: list[str] | None = None,
+    *,
+    used_operations: set[str] | None = None,
+) -> dict[str, Any] | None:
+    haystack = " ".join([front, back, " ".join(tags or [])]).lower()
+    for rule in _NB_RULES:
+        if any(keyword_matches(haystack, term) for term in rule["terms"]):
+            if used_operations is None or any(tool not in used_operations for tool in rule["tools"]):
+                return rule
+    return None
 
 
 def infer_nb_text(front: str, back: str, tags: list[str] | None = None) -> str | None:
-    front_haystack = " ".join([front, " ".join(tags or [])]).lower()
-    haystack = " ".join([front, back, " ".join(tags or [])]).lower()
-    for keywords, text in _NB_RULES:
-        if any(keyword_matches(front_haystack, keyword) for keyword in keywords):
-            return text
-    for keywords, text in _NB_RULES:
-        if any(keyword_matches(haystack, keyword) for keyword in keywords):
-            return text
-    return None
+    """Return a short suggested NB; canonical deck export requires authored metadata."""
+    rule = infer_nb_rule(front, back, tags)
+    if rule is None:
+        return None
+    tool = rule["tools"][0]
+    return f"Use {tool} to {rule['action']}."
 
 
 def keyword_matches(haystack: str, keyword: str) -> bool:
@@ -291,6 +237,7 @@ def auto_highlight_key_terms(front: str, back: str, tags: list[str] | None = Non
 
 
 def attach_nb_footnote(card: dict[str, Any]) -> dict[str, Any]:
+    """Legacy authoring helper; the canonical builder never calls this fallback."""
     back = str(card.get("back", ""))
     updated = dict(card)
     if "class=\"nb\"" in back or "<strong>NB:</strong>" in back or "NB:" in back:

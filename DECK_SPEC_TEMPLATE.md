@@ -29,8 +29,10 @@ academic textbook or technical manual.
 - Do not repeat, paraphrase, or hint at the answer in the front.
 - Avoid slang, conversational fillers, rhetorical questions, unexplained
   abbreviations, fragments, telegraphic lists, and vague pronouns.
-- Keep the answer concise enough for retrieval practice: normally one or two
-  focused paragraphs, not an essay.
+- Keep the answer concise enough for retrieval practice: exactly two focused
+  `<p>` paragraphs, no more and no fewer. Paragraph 1 states the core
+  definition, model, mechanism, or procedure; paragraph 2 adds a distinct
+  consequence, contrast, limitation, or application.
 - Preserve technical notation, units, thresholds, and causal direction
   exactly.
 - Use bullets only for a short ordered set or contrast. Each bullet must have
@@ -251,7 +253,8 @@ are well-defined and time-independent.
 Each card should follow the example deck pattern:
 
 - `front`: concise, context-complete question written in the formal register
-- `back`: at least two meaningful explanatory `<p>` paragraphs
+- `back`: exactly two meaningful explanatory `<p>` paragraphs; hook and NB
+  metadata are rendered outside these paragraphs
 - `tags`: optional note tags
 - `front` should render bold in the question side for visual distinction
 - `back` should include at least one pointed red-bolded high-yield term when the concept warrants emphasis
@@ -273,9 +276,15 @@ Each card should follow the example deck pattern:
   PySpark, dbt, Git, GitHub Actions, Linux, Bash, Docker, Jupyter, Quarto,
   REST and JSON tools, C, C++, Java, JavaScript, and domain tools such as
   NONMEM, Monolix, Phoenix WinNonlin, REDCap, QGIS, and ImageJ.
+- Use the compact concept-family/tool/action registry and structural card
+  templates in `deck_spec_helpers.py` as selection aids. Adapt each chosen
+  action to the card; do not copy generic filler or let the export builder
+  rewrite the authored NB.
 - For opaque technical or scientific terms, try a sound-alike or near-homophone first, then build the picture around that substitute.
 - When the card depends on exact counts, ordered lists, thresholds, or small sequences, consider a phonetic-number or peg-word cue so the numbers themselves become memorable.
-- For tier-2 yield terms, use soft background highlights that vary within the deck instead of reusing one flat accent for the whole deck.
+- Distribute tier-2 highlights across both authored paragraphs: mark at least one distinct high-yield term in each paragraph when the source supports it. Prefer two or three total per card when genuinely useful terms are available. Do not highlight filler or repeat a term to satisfy a count. Vary soft tier-2 colors across the deck, and author the intended distribution directly in the spec; builder fallback styling does not guarantee paragraph-level distribution.
+- Estimate the card budget from distinct concepts supported by the source; do not pad with duplicate, thin, or unsupported cards. Interpret a requested count according to its wording: "exactly N" requires N supported cards, while "at least N" is a floor, not a reason to keep adding weak cards. If an exact count cannot be supported, stop and report the source-supported count instead of fabricating content.
+- Before drafting each card, identify a distinct actionable NB operation. If no direct operation fits, narrow the concept and use a truthful adjacent workflow (inspect, query, visualize, simulate, validate, or transform relevant data); never omit the required NB metadata.
 - Recall hooks must use exactly one of the four approved hook colors: blue,
   red, purple, or navy. Tier-2 highlighting is independent and may continue
   using green, gold, pink, orange, purple, and teal.
@@ -283,13 +292,12 @@ Each card should follow the example deck pattern:
 
 ## Back HTML Pattern
 
-Prefer this order when the concept supports it:
+Use this structure:
 
 1. Short opening explanation
 2. Second paragraph that tightens the causal or practical point
-3. Optional bullet list for contrasts or breakdowns
-4. Exactly one `.callout` Recall hook
-5. Exactly one `.nb` NB footer
+3. Exactly one `.callout` Recall hook, rendered from metadata outside the two paragraphs
+4. Exactly one `.nb` NB footer, rendered from metadata outside the two paragraphs
 
 ## Visual Rules
 
