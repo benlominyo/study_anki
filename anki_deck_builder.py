@@ -14,7 +14,6 @@ import genanki
 
 from deck_spec_helpers import (
     SPAN_OPEN_TAG_PATTERN,
-    auto_highlight_key_terms,
     memory_anchor,
     span_class_attribute,
     TIER2_PALETTE,
@@ -46,7 +45,6 @@ DEFAULT_CSS = """
 .question {
  font-weight: 700;
 }
-.key { color: #b00000; font-weight: 700; }
 .red { color: #b00000; font-weight: 700; }
 .tier2 {
  font-weight: 700;
@@ -649,8 +647,6 @@ def build_deck(spec: dict[str, Any], spec_dir: Path, *, force: bool = False) -> 
         front = str(normalized["front"])
         tags = [str(tag) for tag in normalized.get("tags", [])]
         back = str(normalized["back"])
-        back = auto_highlight_key_terms(front, back, tags, title=deck_name)
-        normalized["back"] = back
         validate_normalized_card(normalized, deck_name=deck_name, card_index=index)
         images = [normalize_image(value) for value in normalized.get("images", [])]
         for image in images:
