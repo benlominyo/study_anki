@@ -5,27 +5,39 @@ import re
 from pathlib import Path
 from typing import Any
 
-PALETTE: dict[str, str] = {
-    "blue": "#255d8c",
-    "red": "#b00000",
-    "green": "#2e7d73",
-    "gold": "#7bbddc",
-    "pink": "#c65b7c",
-    "orange": "#d9822b",
-    "purple": "#7a4fb0",
-    "teal": "#5aa6a1",
+TIER2_PALETTE: dict[str, dict[str, str]] = {
+    "blue": {"foreground": "#255d8c", "background": "#eaf2fb"},
+    "red": {"foreground": "#b00000", "background": "#fdeceb"},
+    "green": {"foreground": "#2e7d73", "background": "#eaf6f1"},
+    "lightblue": {"foreground": "#7bbddc", "background": "#eaf2fb"},
+    "pink": {"foreground": "#c65b7c", "background": "#fdf0f4"},
+    "orange": {"foreground": "#d9822b", "background": "#fff1e4"},
+    "purple": {"foreground": "#7a4fb0", "background": "#f2ecfb"},
+    "teal": {"foreground": "#5aa6a1", "background": "#edf9f7"},
 }
 
-TIER2_VARIANTS: tuple[str, ...] = (
-    "tier2-blue",
-    "tier2-red",
-    "tier2-green",
-    "tier2-gold",
-    "tier2-pink",
-    "tier2-orange",
-    "tier2-purple",
-    "tier2-teal",
+PALETTE: dict[str, str] = {
+    color: values["foreground"] for color, values in TIER2_PALETTE.items()
+}
+
+TIER2_VARIANTS: tuple[str, ...] = tuple(f"tier2-{color}" for color in TIER2_PALETTE)
+
+SPAN_OPEN_TAG_PATTERN = re.compile(r"<span\b(?:[^\"'<>]|\"[^\"]*\"|'[^']*')*>", re.IGNORECASE | re.DOTALL)
+_CLASS_ATTRIBUTE_PATTERN = re.compile(
+    r"(?<=\s)class\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s\"'=<>`]+))",
+    re.IGNORECASE | re.DOTALL,
 )
+
+
+def span_class_attribute(tag: str) -> tuple[str, int, int] | None:
+    """Return an actual span class attribute and its value offsets in the tag."""
+    match = _CLASS_ATTRIBUTE_PATTERN.search(tag)
+    if match is None:
+        return None
+    for group in (1, 2, 3):
+        if match.group(group) is not None:
+            return match.group(group), match.start(group), match.end(group)
+    return None
 
 
 def p(text: str) -> str:
@@ -216,6 +228,13 @@ _TITLE_RULES: list[tuple[set[str], tuple[str, ...]]] = [
 def auto_highlight_key_terms(front: str, back: str, tags: list[str] | None = None, *, title: str | None = None) -> str:
     if "class=\"key\"" in back:
         return back
+    for tag_match in SPAN_OPEN_TAG_PATTERN.finditer(back):
+        class_attribute = span_class_attribute(tag_match.group(0))
+        if class_attribute is None:
+            continue
+        classes = class_attribute[0].split()
+        if "tier2" in classes or any(token.startswith("tier2-") for token in classes):
+            return back
 
     haystack = " ".join([front, back, " ".join(tags or [])]).lower()
     title_haystack = (title or "").lower()
@@ -261,5 +280,8 @@ def tier2_variant_for(*parts: object) -> str:
 
 def tier2(text: str, tone: str | None = None, *, seed: object | None = None) -> str:
     selected = tone or tier2_variant_for(seed if seed is not None else text)
-    selected = selected.removeprefix("tier2-")
+    selected = selected.casefold().removeprefix("tier2-")
+    if selected not in TIER2_PALETTE:
+        allowed = ", ".join(TIER2_PALETTE)
+        raise ValueError(f"unsupported Tier-2 color {selected!r}; allowed colors are {allowed}")
     return f'<span class="tier2 tier2-{selected}">{text}</span>'

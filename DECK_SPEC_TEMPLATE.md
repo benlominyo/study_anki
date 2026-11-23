@@ -257,7 +257,7 @@ Each card should follow the example deck pattern:
   metadata are rendered outside these paragraphs
 - `tags`: optional note tags
 - `front` should render bold in the question side for visual distinction
-- `back` should include at least one pointed red-bolded high-yield term when the concept warrants emphasis
+- Use tier-2 spans in `back` only when they clarify meaningful terms or relationships.
 - Add exactly one non-empty, actionable `NB:` footer to every card. Derive it
   from the card's concept, preferring a direct implementation whenever
   possible. If no direct implementation exists, use an honest adjacent
@@ -282,12 +282,13 @@ Each card should follow the example deck pattern:
   rewrite the authored NB.
 - For opaque technical or scientific terms, try a sound-alike or near-homophone first, then build the picture around that substitute.
 - When the card depends on exact counts, ordered lists, thresholds, or small sequences, consider a phonetic-number or peg-word cue so the numbers themselves become memorable.
-- Distribute tier-2 highlights across both authored paragraphs: mark at least one distinct high-yield term in each paragraph when the source supports it. Prefer two or three total per card when genuinely useful terms are available. Do not highlight filler or repeat a term to satisfy a count. Vary soft tier-2 colors across the deck, and author the intended distribution directly in the spec; builder fallback styling does not guarantee paragraph-level distribution.
+- Use tier-2 spans selectively when they clarify a meaningful term, relationship, contrast, or list. Related terms may share a color; distinct list items may use different colors when that helps retrieval. There is no per-card quota; do not highlight filler or repeat terms for decoration. Author spans as `<span class="tier2 tier2-{color}">…</span>` using `blue`, `red`, `green`, `lightblue`, `pink`, `orange`, `purple`, or `teal`. The `lightblue` foreground is `#7bbddc`; supported authored spans are preserved.
 - Estimate the card budget from distinct concepts supported by the source; do not pad with duplicate, thin, or unsupported cards. Interpret a requested count according to its wording: "exactly N" requires N supported cards, while "at least N" is a floor, not a reason to keep adding weak cards. If an exact count cannot be supported, stop and report the source-supported count instead of fabricating content.
 - Before drafting each card, identify a distinct actionable NB operation. If no direct operation fits, narrow the concept and use a truthful adjacent workflow (inspect, query, visualize, simulate, validate, or transform relevant data); never omit the required NB metadata.
 - Recall hooks must use exactly one of the four approved hook colors: blue,
-  red, purple, or navy. Tier-2 highlighting is independent and may continue
-  using green, gold, pink, orange, purple, and teal.
+  red, purple, or navy. Tier-2 highlighting is independent and uses the
+  supported palette: blue, red, green, lightblue, pink, orange, purple, and
+  teal. `lightblue` is `#7bbddc`.
 - Validate the full spec before export and keep the generator step in one obvious command.
 
 ## Back HTML Pattern
@@ -313,8 +314,8 @@ Use this structure:
   `.callout.purple`
 - `.nb` for tiny applied-footnote hints
 - Add a rotating family of `.tier2-*` or equivalent soft-highlight styles for second-tier yield words and definitions, including `.tier2-red` when useful.
-- `.blue`, `.red`, `.green`, `.gold`, `.pink`, `.orange`, `.purple`, `.teal`
-- Use blue, red, green, gold, pink, orange, purple, teal, and nearby variants sparingly for structure, contrast, and callout boxes: `#255d8c`, `#b00000`, `#2e7d73`, `#2e7d73`, `#c65b7c`, `#d9822b`, `#7a4fb0`, `#5aa6a1`, plus slight nearby shade shifts when it improves variety.
+- `.blue`, `.red`, `.green`, `.lightblue`, `.pink`, `.orange`, `.purple`, `.teal`
+- Tier-2 foreground colors are blue `#255d8c`, red `#b00000`, green `#2e7d73`, lightblue `#7bbddc`, pink `#c65b7c`, orange `#d9822b`, purple `#7a4fb0`, and teal `#5aa6a1`. Use the corresponding soft backgrounds and do not substitute nearby shades.
 - Use these deliberately, especially when you need to make the recall path obvious.
 
 ## Example Card

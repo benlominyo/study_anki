@@ -65,9 +65,13 @@ success-shaped package containing a malformed card. Each card must have:
 - preserved tags, valid HTML, images, equations, key-term markup, and tier-2
   styling.
 
-The Recall-hook palette is independent from tier-2 highlighting. Distribute tier-2 highlights across both authored paragraphs: include at least one distinct high-yield term in each paragraph when the source supports it, preferably two or three useful terms total per card. Do not highlight filler or repeat terms to meet a count. The builder's automatic styling is only a fallback and does not guarantee paragraph-level distribution. Tier-2
-styling retains its existing palette, including green, gold, pink, orange,
-purple, and teal.
+The Recall-hook palette is independent from tier-2 highlighting. Use tier-2
+spans selectively for meaningful terms, relationships, contrasts, or lists;
+related terms may share a color, and distinct list items may use different
+colors when that improves retrieval. There is no per-card quota. Use the
+supported blue, red, green, lightblue, pink, orange, purple, and teal classes;
+`lightblue` is `#7bbddc`. The builder preserves supported authored spans and
+reports their distribution without requiring highlights in either paragraph.
 The builder rejects backs with fewer or more than two meaningful `<p>`
 paragraphs. It does not rewrite card meaning, remove valid HTML, or remove
 referenced media.

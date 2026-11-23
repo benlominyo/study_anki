@@ -13,17 +13,23 @@ from typing import Any
 import genanki
 
 from deck_spec_helpers import (
+    SPAN_OPEN_TAG_PATTERN,
     auto_highlight_key_terms,
     memory_anchor,
-    tier2_variant_for,
+    span_class_attribute,
+    TIER2_PALETTE,
 )
 
 
 BUILD_CACHE_SUFFIX = ".build-cache.json"
-NORMALIZATION_CONTRACT_VERSION = "1"
+NORMALIZATION_CONTRACT_VERSION = "2"
 RECALL_HOOK_COLORS = {"blue", "red", "purple", "navy"}
 NB_NOT_APPLICABLE_TEXT = "Not applicable — this concept has no direct computational operation."
 
+_TIER2_CSS = "\n".join(
+    f".tier2-{color} {{ background: {values['background']}; color: {values['foreground']}; }}"
+    for color, values in TIER2_PALETTE.items()
+)
 
 DEFAULT_CSS = """
 .card {
@@ -49,18 +55,11 @@ DEFAULT_CSS = """
  box-decoration-break: clone;
  -webkit-box-decoration-break: clone;
 }
-.tier2-blue { background: #eaf2fb; color: #255d8c; }
-.tier2-red { background: #fdeceb; color: #b00000; }
-.tier2-green { background: #eaf6f1; color: #2e7d73; }
-.tier2-gold { background: #eaf2fb; color: #7bbddc; }
-.tier2-pink { background: #fdf0f4; color: #c65b7c; }
-.tier2-orange { background: #fff1e4; color: #d9822b; }
-.tier2-purple { background: #f2ecfb; color: #7a4fb0; }
-.tier2-teal { background: #edf9f7; color: #5aa6a1; }
+__TIER2_CSS__
 .blue { color: #255d8c; font-weight: 700; }
 .green { color: #2e7d73; font-weight: 700; }
 .navy { color: #17365d; font-weight: 700; }
-.gold { color: #7bbddc; font-weight: 700; }
+.lightblue { color: #7bbddc; font-weight: 700; }
 .pink { color: #c65b7c; font-weight: 700; }
 .orange { color: #d9822b; font-weight: 700; }
 .purple { color: #7a4fb0; font-weight: 700; }
@@ -73,7 +72,7 @@ DEFAULT_CSS = """
  border-radius: 0.3rem;
 }
 .callout.navy { background: #edf2f8; border-left-color: #17365d; }
-.callout.gold { background: #eaf2fb; border-left-color: #2e7d73; }
+.callout.lightblue { background: #eaf2fb; border-left-color: #2e7d73; }
 .callout.red { background: #fdeceb; border-left-color: #b00000; }
 .callout.pink { background: #fdf0f4; border-left-color: #c65b7c; }
 .callout.orange { background: #fff1e4; border-left-color: #d9822b; }
@@ -115,7 +114,7 @@ ul {
  margin: 0.5rem 0 0.75rem 1.3rem;
 }
 li { margin: 0.2rem 0; }
-""".strip()
+""".replace("__TIER2_CSS__", _TIER2_CSS).strip()
 
 
 def stable_id(text: str) -> int:
@@ -179,26 +178,38 @@ def rewrite_image_src(back: str, image_src: str, replacement: str) -> str:
 
 
 def has_tier2(back: str) -> bool:
-    return bool(re.search(r'class="[^"]*\btier2\b[^"]*"', back))
+    paragraph_colors = tier2_colors_by_paragraph(back)
+    return any(paragraph_colors[0]) or any(paragraph_colors[1])
+
+
+def tier2_colors_by_paragraph(back: str) -> tuple[list[str], list[str]]:
+    """Return canonical Tier-2 color names from the two explanatory paragraphs."""
+    paragraphs = _meaningful_paragraphs(back)
+    paragraph_colors: list[list[str]] = []
+    for paragraph in paragraphs[:2]:
+        colors: list[str] = []
+        for span_match in SPAN_OPEN_TAG_PATTERN.finditer(paragraph):
+            class_attribute = span_class_attribute(span_match.group(0))
+            if class_attribute is None:
+                continue
+            classes = class_attribute[0].split()
+            if "tier2" not in classes:
+                continue
+            colors.extend(
+                token.removeprefix("tier2-")
+                for token in classes
+                if token.startswith("tier2-")
+            )
+        paragraph_colors.append(colors)
+    while len(paragraph_colors) < 2:
+        paragraph_colors.append([])
+    return paragraph_colors[0], paragraph_colors[1]
 
 
 def tier2_paragraph_counts(back: str) -> tuple[int, int]:
     """Count authored tier-2 spans in the two explanatory paragraphs."""
-    paragraphs = re.findall(r"<p\b[^>]*>(.*?)</p\s*>", back, flags=re.IGNORECASE | re.DOTALL)
-    counts: list[int] = []
-    for paragraph in paragraphs[:2]:
-        counts.append(
-            len(
-                re.findall(
-                    r'<span\b[^>]*class="[^"]*\btier2\b[^"]*"',
-                    paragraph,
-                    flags=re.IGNORECASE,
-                )
-            )
-        )
-    while len(counts) < 2:
-        counts.append(0)
-    return counts[0], counts[1]
+    paragraph_colors = tier2_colors_by_paragraph(back)
+    return len(paragraph_colors[0]), len(paragraph_colors[1])
 
 
 class CardValidationError(ValueError):
@@ -210,14 +221,18 @@ def _card_error(deck_name: str, card_index: int, message: str) -> CardValidation
 
 
 def _meaningful_paragraph_count(back: str) -> int:
+    return len(_meaningful_paragraphs(back))
+
+
+def _meaningful_paragraphs(back: str) -> list[str]:
     paragraphs = re.findall(r"<p\b[^>]*>(.*?)</p\s*>", back, flags=re.IGNORECASE | re.DOTALL)
-    count = 0
+    meaningful: list[str] = []
     for paragraph in paragraphs:
         text = re.sub(r"<[^>]+>", " ", paragraph)
         text = html.unescape(text)
         if re.sub(r"\s+", " ", text).strip():
-            count += 1
-    return count
+            meaningful.append(paragraph)
+    return meaningful
 
 
 def _recall_hook_matches(back: str) -> list[re.Match[str]]:
@@ -291,6 +306,37 @@ def _render_nb(metadata: Any, deck_name: str, card_index: int) -> str:
     return f'<div class="nb"><strong>NB:</strong> {html.escape(text, quote=False)}</div>'
 
 
+def normalize_tier2_markup(back: str, deck_name: str, card_index: int) -> str:
+    """Normalize saved light-blue spans and validate every authored Tier-2 class."""
+    for span_match in reversed(list(SPAN_OPEN_TAG_PATTERN.finditer(back))):
+        tag = span_match.group(0)
+        class_attribute = span_class_attribute(tag)
+        if class_attribute is None:
+            continue
+
+        classes = class_attribute[0].split()
+        palette_classes = [token for token in classes if token.startswith("tier2-")]
+        has_tier2_marker = "tier2" in classes or bool(palette_classes)
+        if not has_tier2_marker:
+            continue
+
+        # Existing saved specifications use this spelling for #7bbddc.
+        classes = ["tier2-lightblue" if token == "tier2-gold" else token for token in classes]
+        palette_classes = [token for token in classes if token.startswith("tier2-")]
+        if len(palette_classes) != 1 or classes.count("tier2") != 1:
+            raise _card_error(deck_name, card_index, "Tier-2 span must include exactly one supported color class")
+
+        color = palette_classes[0].removeprefix("tier2-")
+        if color not in TIER2_PALETTE:
+            raise _card_error(deck_name, card_index, f"unsupported Tier-2 color {color!r}")
+
+        normalized_classes = " ".join(classes)
+        _, class_start, class_end = class_attribute
+        normalized_tag = tag[:class_start] + normalized_classes + tag[class_end:]
+        back = back[:span_match.start()] + normalized_tag + back[span_match.end():]
+    return back
+
+
 def normalize_card(card: dict[str, Any], *, deck_name: str, card_index: int) -> dict[str, Any]:
     if not isinstance(card, dict):
         raise _card_error(deck_name, card_index, "card must be an object")
@@ -301,7 +347,7 @@ def normalize_card(card: dict[str, Any], *, deck_name: str, card_index: int) -> 
 
     normalized = dict(card)
     front = str(card["front"]).strip()
-    back = str(card["back"])
+    back = normalize_tier2_markup(str(card["back"]), deck_name, card_index)
     if not front:
         raise _card_error(deck_name, card_index, "front must be non-empty")
     paragraph_count = _meaningful_paragraph_count(back)
@@ -345,14 +391,6 @@ def validate_normalized_card(card: dict[str, Any], *, deck_name: str, card_index
     if _nb_block_count(back) != 1:
         raise _card_error(deck_name, card_index, "normalized card must have exactly one NB footer")
     _validate_nb_footer(back, deck_name, card_index)
-
-
-def fix_light_hook_text_colors(back: str) -> str:
-    back = back.replace('<span class="blue">Recall hook:</span>', '<span class="blue">Recall hook:</span>')
-    back = back.replace('<span class="gold">Recall hook:</span>', '<span class="gold">Recall hook:</span>')
-    back = back.replace('<span class="red">Exam anchor:</span>', '<span class="red">Exam anchor:</span>')
-    back = back.replace('<div class="callout red">', '<div class="callout gold">')
-    return back
 
 
 def normalize_concept_text(text: str) -> str:
@@ -507,6 +545,9 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
     cards_with_images = 0
     cards_with_tier2 = 0
     cards_with_tier2_in_both_paragraphs = 0
+    tier2_paragraph_1_spans = 0
+    tier2_paragraph_2_spans = 0
+    tier2_color_spans = {color: 0 for color in TIER2_PALETTE}
     cards_with_key = 0
     distinct_images: set[str] = set()
 
@@ -523,11 +564,16 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
         has_key = '<span class="key">' in back
         if has_key:
             cards_with_key += 1
-        if has_tier2(back) or has_key or "tier2" in [str(tag) for tag in entry.get("tags", [])]:
+        paragraph_colors = tier2_colors_by_paragraph(back)
+        paragraph_counts = (len(paragraph_colors[0]), len(paragraph_colors[1]))
+        if any(paragraph_counts):
             cards_with_tier2 += 1
-        paragraph_tier2 = tier2_paragraph_counts(back)
-        if all(count > 0 for count in paragraph_tier2):
+        if all(count > 0 for count in paragraph_counts):
             cards_with_tier2_in_both_paragraphs += 1
+        tier2_paragraph_1_spans += paragraph_counts[0]
+        tier2_paragraph_2_spans += paragraph_counts[1]
+        for color in paragraph_colors[0] + paragraph_colors[1]:
+            tier2_color_spans[color] += 1
 
         images = [normalize_image(value) for value in entry.get("images", [])]
         if images:
@@ -553,6 +599,9 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
         "cards_with_key": cards_with_key,
         "cards_with_tier2": cards_with_tier2,
         "cards_with_tier2_in_both_paragraphs": cards_with_tier2_in_both_paragraphs,
+        "tier2_paragraph_1_spans": tier2_paragraph_1_spans,
+        "tier2_paragraph_2_spans": tier2_paragraph_2_spans,
+        **{f"tier2_{color}_spans": count for color, count in tier2_color_spans.items()},
         "distinct_images": len(distinct_images),
     }
 
@@ -601,16 +650,6 @@ def build_deck(spec: dict[str, Any], spec_dir: Path, *, force: bool = False) -> 
         tags = [str(tag) for tag in normalized.get("tags", [])]
         back = str(normalized["back"])
         back = auto_highlight_key_terms(front, back, tags, title=deck_name)
-        tier2_variant = tier2_variant_for(deck_name, front, back, index, tags)
-        if 'class="tier2"' not in back and 'tier2' not in tags:
-            back = back.replace('<span class="key">', f'<span class="key tier2 {tier2_variant}">', 1)
-        else:
-            back = re.sub(
-                r'class="(?:key\s+)?tier2(?:\s+key)?"',
-                f'class="key tier2 {tier2_variant}"',
-                back,
-                count=1,
-            )
         normalized["back"] = back
         validate_normalized_card(normalized, deck_name=deck_name, card_index=index)
         images = [normalize_image(value) for value in normalized.get("images", [])]
@@ -680,6 +719,15 @@ def main() -> int:
     print(f"Cards with images: {summary['cards_with_images']}")
     print(f"Cards with tier-2 highlights: {summary['cards_with_tier2']}")
     print(f"Cards with tier-2 highlights in both paragraphs: {summary['cards_with_tier2_in_both_paragraphs']}")
+    print(
+        "Authored tier-2 spans by paragraph: "
+        f"paragraph 1 {summary['tier2_paragraph_1_spans']}, "
+        f"paragraph 2 {summary['tier2_paragraph_2_spans']}"
+    )
+    palette_summary = ", ".join(
+        f"{color} {summary[f'tier2_{color}_spans']}" for color in TIER2_PALETTE
+    )
+    print(f"Authored tier-2 spans by color: {palette_summary}")
     return 0
 
 

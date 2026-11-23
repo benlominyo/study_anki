@@ -3,7 +3,197 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from anki_deck_builder import CardValidationError, build_deck, normalize_card, should_skip_creation
+from anki_deck_builder import DEFAULT_CSS, CardValidationError, build_deck, inspect_spec, normalize_card, should_skip_creation
+from deck_spec_helpers import PALETTE, auto_highlight_key_terms, tier2
+
+
+class AuthoringPaletteContractTests(unittest.TestCase):
+    DOC_NAMES = (
+        "ANKI_CARD_GENERATION_PROMPT.md",
+        "DECK_SPEC_TEMPLATE.md",
+        "README.md",
+        "SKILL.md",
+    )
+    PALETTE_NAMES = ("blue", "red", "green", "lightblue", "pink", "orange", "purple", "teal")
+
+    def test_authoring_docs_use_the_canonical_lightblue_palette_without_quotas(self):
+        root = Path(__file__).parent
+        for name in self.DOC_NAMES:
+            with self.subTest(document=name):
+                content = (root / name).read_text(encoding="utf-8").casefold()
+                self.assertIn("lightblue", content)
+                self.assertIn("#7bbddc", content)
+                self.assertIn("no per-card quota", content)
+                for color in self.PALETTE_NAMES:
+                    self.assertIn(color, content)
+                self.assertNotIn("two or three", content)
+                self.assertNotIn("at least one distinct", content)
+                self.assertNotRegex(content, r"bold[- ]red|answer[- ]target|answer target")
+
+
+class PaletteRenderingTests(unittest.TestCase):
+    @staticmethod
+    def card(back):
+        return {
+            "front": "What does the highlighted term mean?",
+            "back": back,
+            "recall_hook": {"color": "navy", "text": "The hook restates the concept."},
+            "nb": {"mode": "actionable", "text": "Use pandas.DataFrame.describe() to inspect the values."},
+        }
+
+    def test_lightblue_palette_value_and_css_are_consistent(self):
+        self.assertEqual(PALETTE["lightblue"], "#7bbddc")
+        self.assertNotIn("gold", PALETTE)
+        self.assertIn(".tier2-lightblue { background: #eaf2fb; color: #7bbddc; }", DEFAULT_CSS)
+        self.assertNotIn(".tier2-gold", DEFAULT_CSS)
+
+    def test_tier2_helper_emits_lightblue_markup(self):
+        self.assertEqual(
+            tier2("retrieval term", "lightblue"),
+            '<span class="tier2 tier2-lightblue">retrieval term</span>',
+        )
+
+    def test_tier2_helper_rejects_unsupported_color(self):
+        with self.assertRaisesRegex(ValueError, "unsupported Tier-2 color"):
+            tier2("retrieval term", "violet")
+
+    def test_normalization_migrates_legacy_class_and_preserves_authored_spans(self):
+        normalized = normalize_card(
+            self.card(
+                '<p>First <span class="key tier2 tier2-gold">light-blue phrase</span>.</p>'
+                '<p>Second <span class="tier2 tier2-green">related term</span>.</p>'
+            ),
+            deck_name="Palette Deck",
+            card_index=3,
+        )
+        self.assertIn('<span class="key tier2 tier2-lightblue">light-blue phrase</span>', normalized["back"])
+        self.assertIn('<span class="tier2 tier2-green">related term</span>', normalized["back"])
+
+    def test_normalization_rejects_unsupported_tier2_class_with_card_context(self):
+        with self.assertRaisesRegex(CardValidationError, r"Palette Deck.*card 4.*unsupported Tier-2 color 'violet'"):
+            normalize_card(
+                self.card(
+                    '<p>First <span class="tier2 tier2-violet">term</span>.</p>'
+                    "<p>Second paragraph.</p>"
+                ),
+                deck_name="Palette Deck",
+                card_index=4,
+            )
+
+    def test_normalization_parses_actual_class_attribute_across_attribute_order_and_quoted_gt(self):
+        for opening_tag in (
+            '<span data-class="annotation" class="tier2 tier2-violet">',
+            '<span title="x > y" class="tier2 tier2-violet">',
+        ):
+            with self.subTest(opening_tag=opening_tag):
+                with self.assertRaisesRegex(CardValidationError, "unsupported Tier-2 color 'violet'"):
+                    normalize_card(
+                        self.card("<p>First " + opening_tag + "term</span>.</p><p>Second paragraph.</p>"),
+                        deck_name="Palette Deck",
+                        card_index=6,
+                    )
+
+    def test_data_class_does_not_trigger_tier2_normalization(self):
+        normalized = normalize_card(
+            self.card(
+                '<p>First <span data-class="tier2 tier2-violet">annotation</span>.</p>'
+                "<p>Second paragraph.</p>"
+            ),
+            deck_name="Palette Deck",
+            card_index=7,
+        )
+        self.assertIn('data-class="tier2 tier2-violet"', normalized["back"])
+
+    def test_key_term_highlighter_preserves_authored_tier2_color(self):
+        back = (
+            '<p>First <span class="tier2 tier2-green">time series</span>.</p>'
+            "<p>Second paragraph.</p>"
+        )
+        self.assertEqual(
+            auto_highlight_key_terms("Explain time series", back, title="Time Series"),
+            back,
+        )
+
+    def test_normalization_rejects_incomplete_tier2_class(self):
+        with self.assertRaisesRegex(CardValidationError, "Tier-2 span must include exactly one supported color class"):
+            normalize_card(
+                self.card('<p>First <span class="tier2">term</span>.</p><p>Second paragraph.</p>'),
+                deck_name="Palette Deck",
+                card_index=5,
+            )
+
+
+class PaletteInspectionTests(unittest.TestCase):
+    @staticmethod
+    def inspect(back, deck_name="Palette Inspection"):
+        spec = {
+            "deck_name": deck_name,
+            "cards": [
+                {
+                    "front": f"What is the main concept in {deck_name}?",
+                    "back": back,
+                    "recall_hook": {"color": "navy", "text": "The hook restates the concept."},
+                    "nb": {"mode": "actionable", "text": "Use pandas.DataFrame.describe() to inspect the values."},
+                }
+            ],
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            return inspect_spec(spec, Path(tmpdir))
+
+    def test_inspection_counts_only_authored_spans_in_the_two_paragraphs(self):
+        summary = self.inspect(
+            '<p>First <span class="tier2 tier2-blue">blue one</span> and '
+            '<span class="tier2 tier2-red">red one</span>.</p>'
+            '<p>Second <span class="tier2 tier2-lightblue">light blue</span>.</p>'
+            '<div class="callout navy"><span class="navy tier2 tier2-green">Recall hook:</span> Hook.</div>'
+            '<div class="nb"><strong>NB:</strong> <span class="tier2 tier2-teal">Footer term</span>.</div>'
+        )
+        self.assertEqual(summary["cards_with_tier2"], 1)
+        self.assertEqual(summary["cards_with_tier2_in_both_paragraphs"], 1)
+        self.assertEqual(summary["tier2_paragraph_1_spans"], 2)
+        self.assertEqual(summary["tier2_paragraph_2_spans"], 1)
+        self.assertEqual(summary["tier2_blue_spans"], 1)
+        self.assertEqual(summary["tier2_red_spans"], 1)
+        self.assertEqual(summary["tier2_lightblue_spans"], 1)
+        self.assertEqual(summary["tier2_green_spans"], 0)
+        self.assertEqual(summary["tier2_teal_spans"], 0)
+
+    def test_inspection_accepts_zero_or_many_highlights_without_a_quota(self):
+        no_highlights = self.inspect(
+            "<p>First paragraph.</p><p>Second paragraph.</p>",
+            deck_name="No Highlight Quota Zero",
+        )
+        many_highlights = self.inspect(
+            '<p>' + " ".join(
+                f'<span class="tier2 tier2-blue">term {index}</span>' for index in range(6)
+            ) + "</p><p>Second paragraph.</p>",
+            deck_name="No Highlight Quota Many",
+        )
+        self.assertEqual(no_highlights["cards_with_tier2"], 0)
+        self.assertEqual(no_highlights["tier2_paragraph_1_spans"], 0)
+        self.assertEqual(many_highlights["cards_with_tier2"], 1)
+        self.assertEqual(many_highlights["tier2_paragraph_1_spans"], 6)
+        self.assertEqual(many_highlights["tier2_blue_spans"], 6)
+        self.assertEqual(many_highlights["tier2_paragraph_2_spans"], 0)
+
+    def test_inspection_ignores_data_class_and_handles_quoted_gt_in_real_class_attribute(self):
+        summary = self.inspect(
+            '<p>First <span data-class="tier2 tier2-green">not a palette span</span>.'
+            '<span title="x > y" class="tier2 tier2-blue">actual</span></p>'
+            "<p>Second paragraph.</p>"
+        )
+        self.assertEqual(summary["tier2_blue_spans"], 1)
+        self.assertEqual(summary["tier2_green_spans"], 0)
+
+    def test_inspection_selects_two_meaningful_paragraphs(self):
+        summary = self.inspect(
+            '<p></p><p><span class="tier2 tier2-blue">first</span></p>'
+            '<p><span class="tier2 tier2-red">second</span></p>'
+        )
+        self.assertEqual(summary["tier2_paragraph_1_spans"], 1)
+        self.assertEqual(summary["tier2_paragraph_2_spans"], 1)
+        self.assertEqual(summary["tier2_blue_spans"], 1)
+        self.assertEqual(summary["tier2_red_spans"], 1)
 
 
 class BudgetGuardTests(unittest.TestCase):
@@ -62,7 +252,7 @@ class BudgetGuardTests(unittest.TestCase):
                 build_deck(
                     {
                         "deck_name": "Invalid Color Deck",
-                        "cards": [self.card(recall_hook={"color": "gold", "text": "Invalid recall color."})],
+                        "cards": [self.card(recall_hook={"color": "lightblue", "text": "Invalid recall color."})],
                     },
                     Path(tmpdir),
                 )
@@ -101,12 +291,12 @@ class BudgetGuardTests(unittest.TestCase):
                 back=(
                     '<p><span class="key">Concept</span> is stated here.</p>'
                     "<p>The second paragraph provides the required context.</p>"
-                    '<span class="tier2 tier2-gold">tier-two term</span>'
+                    '<span class="tier2 tier2-lightblue">tier-two term</span>'
                 ),
             )
             normalized = normalize_card(card, deck_name="Color Deck", card_index=1)
             self.assertIn(f'class="callout {color}"', normalized["back"])
-            self.assertIn("tier2-gold", normalized["back"])
+            self.assertIn("tier2-lightblue", normalized["back"])
 
     def test_green_recall_hook_is_rejected_while_tier2_green_remains_valid(self):
         card = self.card(

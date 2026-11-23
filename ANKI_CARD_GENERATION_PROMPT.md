@@ -81,15 +81,15 @@ commentary. Put the two authored prose paragraphs in `back`; keep Recall hook
 and NB content in their metadata fields so the builder can render each once
 outside those paragraphs.
 
-In each card, distribute tier-2 highlights across both authored prose paragraphs:
-mark at least one distinct, high-yield term in paragraph 1 and at least one
-distinct, high-yield term in paragraph 2 when the source supports them. Prefer
-two or three total highlights per card when that many genuinely useful terms
-are present. Do not highlight filler, repeat a term merely to satisfy a count,
-or make the highlights replace the prose. Choose terms that aid retrieval and
-apply varied soft tier-2 colors across the deck. The builder may ensure that a
-card has some tier-2 styling, but it does not guarantee distribution between
-the two paragraphs; author that distribution directly in the spec.
+Use tier-2 spans selectively when they make a meaningful term, relationship,
+contrast, or list easier to retrieve. Related terms may share a color; distinct
+items in a comma-separated list may use different colors when that distinction
+helps. There is no per-card quota: do not color incidental words, add filler,
+or repeat terms for decoration. Author spans as
+`<span class="tier2 tier2-{color}">…</span>` using only `blue`, `red`, `green`,
+`lightblue`, `pink`, `orange`, `purple`, or `teal`. The `lightblue` foreground
+is `#7bbddc`. The builder preserves supported authored spans and does not add
+or recolor them.
 
 Card-budget gate: derive the deck size from distinct concepts actually supported
 by the source; do not pad the deck with duplicates, thin paraphrases, or

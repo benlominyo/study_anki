@@ -39,7 +39,7 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 - Preserve technical notation, units, thresholds, named methods, and causal direction exactly.
 - Use compact Unicode math notation where needed; do not use raw LaTeX.
 - Write exactly two focused `<p>` paragraphs in the authored back. Paragraph 1 states the core definition, model, mechanism, or procedure; paragraph 2 adds a distinct consequence, contrast, limitation, or application. No exceptions.
-- Distribute tier-2 highlights across both authored paragraphs: mark at least one distinct, source-supported high-yield term in each paragraph. Prefer two or three useful terms total per card when available; do not highlight filler or repeat a term just to meet a count. Author the distribution in the spec because builder fallback styling does not guarantee it.
+- Use tier-2 spans selectively for meaningful terms, relationships, contrasts, or lists. Related terms may share a color; distinct list items may use different colors when that improves retrieval. There is no per-card quota; do not highlight filler or repeat terms for decoration. Use `blue`, `red`, `green`, `lightblue`, `pink`, `orange`, `purple`, or `teal`; `lightblue` is `#7bbddc`. The builder preserves supported authored spans.
 
 ## Recall hook rules
 
@@ -68,7 +68,7 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 5. Draft the complete deck spec in one pass, using only the canonical JSON shape.
 6. Return only the JSON object; include no preface, progress text, explanation, or trailing commentary.
 7. Make sure every card has exactly two authored `<p>` paragraphs, one recall hook, and one actionable NB. Hook and NB metadata are rendered outside the paragraphs.
-8. Ensure key terms are marked and tier-2 highlights are distributed across both paragraphs, with at least one distinct, source-supported term per paragraph and varied soft colors across the deck.
+8. Mark key terms and add tier-2 spans only where they improve retrieval; no per-card highlight quota applies. Use the supported palette consistently, including `lightblue` (`#7bbddc`).
 9. Use the canonical builder in `study_anki` to validate and export the deck.
 10. If the builder reports a validation problem, correct the failing spec content and retry only the targeted build; do not ask the builder to rewrite content.
 
