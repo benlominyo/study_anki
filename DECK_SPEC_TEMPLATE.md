@@ -257,7 +257,7 @@ Each card should follow the example deck pattern:
   metadata are rendered outside these paragraphs
 - `tags`: optional note tags
 - `front` should render bold in the question side for visual distinction
-- Include at least one purposeful Tier-2 span in each explanatory paragraph of every card, following the mandatory palette contract below.
+- Follow the mandatory Tier-2 density, visible-length, and fixed color-role contract below.
 - Add exactly one non-empty, actionable `NB:` footer to every card. Derive it
   from the card's concept, preferring a direct implementation whenever
   possible. If no direct implementation exists, use an honest adjacent
@@ -282,7 +282,31 @@ Each card should follow the example deck pattern:
   rewrite the authored NB.
 - For opaque technical or scientific terms, try a sound-alike or near-homophone first, then build the picture around that substitute.
 - When the card depends on exact counts, ordered lists, thresholds, or small sequences, consider a phonetic-number or peg-word cue so the numbers themselves become memorable.
-- At least one purposeful Tier-2 span is required in each explanatory paragraph of every card. Aim for typically 2–5 spans total across both paragraphs. If a paragraph has no distinctive technical term, highlight its central concept, relationship, contrast, or application rather than leaving it unhighlighted. Use only the eight classes `tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`, `tier2-orange`, `tier2-purple`, and `tier2-teal`, in markup of the form `<span class="tier2 tier2-{color}">…</span>`; `tier2-lightblue` is `#7bbddc`. Never use incomplete or unsupported class lists, nest spans, or put markup in Recall-hook/NB metadata. Removing spans must leave grammatical prose. The builder preserves supported authored spans but does not invent or recolor them.
+- Tier-2 authoring is mandatory for every card. Write exactly two back paragraphs, each with 2–3 complete sentences. The visible prose must total 400–550 characters per card (200–275 visible characters per paragraph; raw HTML is typically 500–830 characters). Paragraph 1 explains the core what/how; paragraph 2 adds a real consequence, assumption, caveat, interpretation, or mechanism, never a one-line restatement.
+
+  Use 2–4 spans in paragraph 1 and 2–3 in paragraph 2 (4–7 total); never leave either paragraph unhighlighted. Span 1–4-word noun phrases only, never clauses. Do not nest spans, repeat a highlighted phrase within a card, or put Tier-2 markup in Recall-hook or NB metadata. Removing spans must leave grammatical, formal prose.
+
+  Use only these eight classes, always with the base `tier2` class:
+  `tier2-blue`, `tier2-purple`, `tier2-orange`, `tier2-green`, `tier2-teal`, `tier2-red`, `tier2-pink`, and `tier2-lightblue`. The core colors—blue, purple, orange, and green—are used first and in most cards; every card uses at least two core colors. At most one span per secondary color (teal, red, pink, lightblue) is allowed per card. A color marks only its assigned role:
+
+  | Color | Fixed role |
+  | --- | --- |
+  | blue | Anchor concept |
+  | purple | Contrast or second concept |
+  | orange | Condition, constraint, or design point |
+  | green | Added factor or consequence |
+  | teal | Time-course or procedural detail |
+  | red | Limiting or cautionary mechanism |
+  | pink | Transition or shape marker |
+  | lightblue | Notation, symbol, or named statistic |
+
+  The `tier2-lightblue` foreground is `#7bbddc`. Author spans as `<span class="tier2 tier2-{color}">…</span>`. The builder preserves authored spans and validates the contract; it does not invent or recolor highlights. Before returning the cards, perform this per-card editorial check: verify two paragraphs and 2–3 sentences each; 400–550 visible characters; 2–4 spans in paragraph 1 and 2–3 in paragraph 2; 1–4-word noun phrases; at least two core colors; no nested spans, duplicate phrases, unsupported classes, or spans outside the answer paragraphs; and grammatical prose after removing markup.
+Preferred PHM4510 example (adapted from the real concentration–response design card; copy the markup pattern and density, not the content):
+
+  ```html
+  <p>When potency or sigmoidicity varies between individuals, the <span class="tier2 tier2-blue">population-average concentration–response curve</span> may not resemble any <span class="tier2 tier2-purple">individual curve</span>. A design optimized around that pooled mean can therefore miss the concentration regions that characterize individual responses.</p>
+  <p>Sampling across the plausible parameter range makes the design more robust to parameter uncertainty and <span class="tier2 tier2-green">between-subject variability</span>. This broader coverage preserves interpretability for individuals whose response differs from the <span class="tier2 tier2-orange">nominal curve</span>.</p>
+  ```
 - Estimate the card budget from distinct concepts supported by the source; do not pad with duplicate, thin, or unsupported cards. Interpret a requested count according to its wording: "exactly N" requires N supported cards, while "at least N" is a floor, not a reason to keep adding weak cards. If an exact count cannot be supported, stop and report the source-supported count instead of fabricating content.
 - Before drafting each card, identify a distinct actionable NB operation. If no direct operation fits, narrow the concept and use a truthful adjacent workflow (inspect, query, visualize, simulate, validate, or transform relevant data); never omit the required NB metadata.
 - Recall hooks must use exactly one of the four approved hook colors: blue,

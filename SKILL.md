@@ -39,7 +39,22 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 - Preserve technical notation, units, thresholds, named methods, and causal direction exactly.
 - Use compact Unicode math notation where needed; do not use raw LaTeX.
 - Write exactly two focused `<p>` paragraphs in the authored back. Paragraph 1 states the core definition, model, mechanism, or procedure; paragraph 2 adds a distinct consequence, contrast, limitation, or application. No exceptions.
-- At least one purposeful Tier-2 span is required in each explanatory paragraph of every card. Aim for typically 2–5 spans total across both paragraphs. If a paragraph has no distinctive technical term, highlight its central concept, relationship, contrast, or application rather than leaving it unhighlighted. Use only `tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`, `tier2-orange`, `tier2-purple`, or `tier2-teal` with the base `tier2` class; `tier2-lightblue` is `#7bbddc`. Keep spans out of Recall-hook and NB metadata, do not nest them, and ensure the prose remains grammatical when they are removed. The builder preserves supported authored spans but does not invent or recolor them.
+- Every card must have exactly two back paragraphs, each with 2–3 complete sentences, and 400–550 visible characters total (200–275 visible characters per paragraph; raw HTML typically 500–830). Paragraph 1 explains the core what/how; paragraph 2 adds a real consequence, assumption, caveat, interpretation, or mechanism, never a one-line restatement.
+- Tier-2 density is mandatory: 2–4 spans in paragraph 1 and 2–3 in paragraph 2 (4–7 total); never leave either paragraph unhighlighted. Span text is 1–4-word noun phrases, never clauses. Never nest Tier-2 spans. Never repeat a highlighted phrase within a card; Tier-2 markup is not in the Recall hook or NB metadata. When spans are removed, the prose must remain grammatical.
+- Use only the eight classes with base `tier2`: `tier2-blue`, `tier2-purple`, `tier2-orange`, `tier2-green`, `tier2-teal`, `tier2-red`, `tier2-pink`, and `tier2-lightblue`. Every card uses at least two core colors (blue, purple, orange, green); use at most one span per secondary color (teal, red, pink, lightblue). A color marks only its fixed role:
+
+| Color | Fixed role |
+| --- | --- |
+| blue | Anchor concept |
+| purple | Contrast or second concept |
+| orange | Condition, constraint, or design point |
+| green | Added factor or consequence |
+| teal | Time-course or procedural detail |
+| red | Limiting or cautionary mechanism |
+| pink | Transition or shape marker |
+| lightblue | Notation, symbol, or named statistic |
+
+- `tier2-lightblue` uses foreground `#7bbddc`. The builder preserves authored spans and validates the contract; it does not invent or recolor them. Before returning cards, verify the length, per-paragraph density, sentence, phrase, palette-role, nesting, and placement rules for every card.
 
 ## Recall hook rules
 
@@ -68,7 +83,7 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 5. Draft the complete deck spec in one pass, using only the canonical JSON shape.
 6. Return only the JSON object; include no preface, progress text, explanation, or trailing commentary.
 7. Make sure every card has exactly two authored `<p>` paragraphs, one recall hook, and one actionable NB. Hook and NB metadata are rendered outside the paragraphs.
-8. Ensure the back has exactly two paragraphs and at least one purposeful Tier-2 span in each; aim for typically 2–5 across the back. Never leave either paragraph unhighlighted, and keep spans out of Recall-hook/NB metadata. The builder preserves authored Tier-2 markup but does not create it.
+8. Self-check every card against the mandatory Tier-2 contract and fixed color-role table above: length and sentence counts, per-paragraph span ranges, phrase length and uniqueness, color-role limits, nesting, placement, and grammatical prose after markup removal. The builder preserves authored spans but does not invent or recolor them.
 9. Use the canonical builder in `study_anki` to validate and export the deck.
 10. If the builder reports a validation problem, correct the failing spec content and retry only the targeted build; do not ask the builder to rewrite content.
 

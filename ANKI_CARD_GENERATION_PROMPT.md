@@ -81,35 +81,31 @@ commentary. Put the two authored prose paragraphs in `back`; keep Recall hook
 and NB content in their metadata fields so the builder can render each once
 outside those paragraphs.
 
-Tier-2 authoring is mandatory. At least one purposeful Tier-2 span is required
-in each explanatory paragraph of every card. Do not leave either paragraph
-unhighlighted. Aim for typically 2–5 purposeful spans total across both
-paragraphs; this is a density guide, not an upper limit. If a paragraph has no
-distinctive technical term, highlight its central concept, relationship,
-contrast, or application rather than leaving it unhighlighted or coloring
-incidental filler. Related terms may share a color; distinct items in a
-parallel list may use different colors when that improves retrieval.
+Tier-2 authoring is mandatory for every card. Write exactly two back paragraphs. Use 2–3 complete sentences per paragraph. The visible prose must total 400–550 visible characters per card (200–275 visible characters per paragraph; raw HTML is typically 500–830 characters). Paragraph 1 explains the core what/how; paragraph 2 adds a real consequence, assumption, caveat, interpretation, or mechanism, never a one-line restatement.
 
-Use only these eight colors with the base `tier2` class:
-`tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`,
-`tier2-orange`, `tier2-purple`, and `tier2-teal`; `tier2-lightblue` uses the
-foreground `#7bbddc`. Author spans as
-`<span class="tier2 tier2-{color}">…</span>`. Never use incomplete or unsupported
-class lists, never nest Tier-2 spans, and keep spans only inside the two answer
-paragraphs—not in the Recall hook or NB metadata. When spans are removed, the
-prose must remain grammatical and formal. The builder preserves supported
-authored spans and does not invent or recolor them.
+Use 2–4 tier-2 spans in paragraph 1 and 2–3 in paragraph 2 (4–7 total); never leave either paragraph unhighlighted. Span 1–4-word noun phrases only, never clauses. Never nest tier-2 spans. Never repeat a highlighted phrase within a card. Tier-2 markup is not in the recall hook or NB metadata. When spans are removed, the prose must remain grammatical and formal.
 
-Preferred PHM4510 example (adapted from the real additive-interindividual-
-variability card):
+Use only these eight classes, always with the base `tier2` class:
+`tier2-blue`, `tier2-purple`, `tier2-orange`, `tier2-green`, `tier2-teal`, `tier2-red`, `tier2-pink`, and `tier2-lightblue`. The core colors—blue, purple, orange, and green—are used first and in most cards; every card uses at least two core colors. At most one span per secondary color (teal, red, pink, lightblue) is allowed per card. A color marks only its assigned role:
+
+| Color | Fixed role |
+| --- | --- |
+| blue | Anchor concept |
+| purple | Contrast or second concept |
+| orange | Condition, constraint, or design point |
+| green | Added factor or consequence |
+| teal | Time-course or procedural detail |
+| red | Limiting or cautionary mechanism |
+| pink | Transition or shape marker |
+| lightblue | Notation, symbol, or named statistic |
+
+The `tier2-lightblue` foreground is `#7bbddc`. Author spans as `<span class="tier2 tier2-{color}">…</span>`. The builder preserves authored spans and validates the contract; it does not invent or recolor highlights. Before returning the cards, perform this per-card editorial check: verify two paragraphs and 2–3 sentences each; 400–550 visible characters; 2–4 spans in paragraph 1 and 2–3 in paragraph 2; 1–4-word noun phrases; at least two core colors; no nested spans, duplicate phrases, unsupported classes, or spans outside the answer paragraphs; and grammatical prose after removing markup.
+
+Preferred PHM4510 example (adapted from the real concentration–response design card; copy the markup pattern and density, not the content):
 
 ```html
-<p>In the additive form, an individual parameter is written as
-<span class="tier2 tier2-blue">P = TVP + ETA</span>, so the random effect
-enters on an <span class="tier2 tier2-purple">absolute scale</span>.</p>
-<p>This form can represent parameters that
-<span class="tier2 tier2-teal">increase or decrease around the typical value</span>,
-but it can also yield <span class="tier2 tier2-orange">negative PK values</span>.</p>
+<p>When potency or sigmoidicity varies between individuals, the <span class="tier2 tier2-blue">population-average concentration–response curve</span> may not resemble any <span class="tier2 tier2-purple">individual curve</span>. A design optimized around that pooled mean can therefore miss concentration regions that characterize individual responses.</p>
+<p>Sampling across the plausible parameter range makes the design more robust to parameter uncertainty and <span class="tier2 tier2-green">between-subject variability</span>. This broader coverage preserves interpretability for individuals whose response differs from the <span class="tier2 tier2-orange">nominal curve</span>.</p>
 ```
 
 Card-budget gate: derive the deck size from distinct concepts actually supported
@@ -130,12 +126,16 @@ how many concepts the source supports.
 Before returning the cards, perform this editorial check:
 - Is each front a complete, context-complete question?
 - Does each back state one unambiguous fact or concept?
-- Does every card have at least one purposeful Tier-2 span in each of its two
-  explanatory paragraphs? Never leave either paragraph unhighlighted.
-- Are all Tier-2 classes from the exact eight-color palette, with no nested
-  spans and no markup in Recall-hook or NB metadata?
-- When the spans are removed, does each paragraph remain grammatical and
-  formal?
+- Does every back contain exactly two paragraphs, each with 2–3 complete
+  sentences and 200–275 visible characters, with 400–550 visible characters
+  total?
+- Does paragraph 1 contain 2–4 spans and paragraph 2 contain 2–3 spans, all
+  1–4-word noun phrases, with no repeated phrase?
+- Are at least two core colors used, secondary colors within their per-card
+  limits, and every color applied only to its fixed role?
+- Are spans non-nested and confined to the two answer paragraphs, with no
+  markup in Recall-hook or NB metadata?
+- When spans are removed, does each paragraph remain grammatical and formal?
 - Does the front avoid answer leakage?
 - Would the wording be acceptable in a carefully edited textbook?
 - Have casual phrases and sentence fragments been replaced without changing

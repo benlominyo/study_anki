@@ -7,6 +7,7 @@ import json
 import re
 import shutil
 import tempfile
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
@@ -21,9 +22,11 @@ from deck_spec_helpers import (
 
 
 BUILD_CACHE_SUFFIX = ".build-cache.json"
-NORMALIZATION_CONTRACT_VERSION = "2"
+NORMALIZATION_CONTRACT_VERSION = "3"
 RECALL_HOOK_COLORS = {"blue", "red", "purple", "navy"}
 NB_NOT_APPLICABLE_TEXT = "Not applicable — this concept has no direct computational operation."
+TIER2_CORE_COLORS = {"blue", "purple", "orange", "green"}
+TIER2_SECONDARY_COLORS = {"teal", "red", "pink", "lightblue"}
 
 _TIER2_CSS = "\n".join(
     f".tier2-{color} {{ background: {values['background']}; color: {values['foreground']}; }}"
@@ -233,6 +236,139 @@ def _meaningful_paragraphs(back: str) -> list[str]:
     return meaningful
 
 
+def _visible_text(markup: str) -> str:
+    text = html.unescape(re.sub(r"<[^>]+>", "", markup))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _sentence_count(text: str) -> int:
+    endings = list(re.finditer(r"[.!?](?=[\"'”’)]*(?:\s|$))", text))
+    abbreviations = ("e.g.", "i.e.", "etc.", "vs.", "Dr.", "Mr.", "Fig.", "Eq.")
+    return sum(
+        not any(text[max(0, match.start() - len(abbr) + 1):match.start() + 1].casefold() == abbr.casefold() for abbr in abbreviations)
+        for match in endings
+    )
+
+
+class _Tier2Parser(HTMLParser):
+    """Collect Tier-2 spans with their text, containing paragraph, and nesting state."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.paragraph_index = -1
+        self.paragraph_count = 0
+        self.in_paragraph = False
+        self.span_stack: list[dict[str, Any]] = []
+        self.spans: list[dict[str, Any]] = []
+        self.nested = False
+        self.key_markup = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attributes = dict(attrs)
+        if tag.casefold() == "p":
+            self.paragraph_index += 1
+            self.paragraph_count += 1
+            self.in_paragraph = True
+        classes = (attributes.get("class") or "").split()
+        if "key" in classes:
+            self.key_markup = True
+        if tag.casefold() == "span":
+            is_tier2 = "tier2" in classes or any(item.startswith("tier2-") for item in classes)
+            if is_tier2 and any(item["is_tier2"] for item in self.span_stack):
+                self.nested = True
+            self.span_stack.append({
+                "is_tier2": is_tier2,
+                "classes": classes,
+                "paragraph": self.paragraph_index,
+                "in_paragraph": self.in_paragraph,
+                "text": [],
+            })
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
+    def handle_data(self, data: str) -> None:
+        for span in self.span_stack:
+            if span["is_tier2"]:
+                span["text"].append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.casefold() == "p":
+            self.in_paragraph = False
+        if tag.casefold() == "span":
+            if self.span_stack:
+                span = self.span_stack.pop()
+                if span["is_tier2"]:
+                    span["text"] = _visible_text("".join(span["text"]))
+                    self.spans.append(span)
+
+
+def _validate_tier2_contract(back: str, deck_name: str, card_index: int) -> dict[str, Any]:
+    paragraphs = _meaningful_paragraphs(back)
+    if len(paragraphs) != 2:
+        raise _card_error(deck_name, card_index, f"back must contain exactly two meaningful <p> paragraphs; found {len(paragraphs)}")
+
+    parser = _Tier2Parser()
+    parser.feed(back)
+    parser.close()
+    if parser.paragraph_count != 2:
+        raise _card_error(deck_name, card_index, f"back must contain exactly two <p> paragraphs; found {parser.paragraph_count}")
+    if parser.nested:
+        raise _card_error(deck_name, card_index, "Tier-2 spans must not be nested")
+    if parser.key_markup:
+        raise _card_error(deck_name, card_index, "key markup is not permitted")
+    if any(span["is_tier2"] for span in parser.span_stack):
+        raise _card_error(deck_name, card_index, "Tier-2 span is missing a closing tag")
+
+    tier2_spans = parser.spans
+    if any(not span["in_paragraph"] or span["paragraph"] not in (0, 1) for span in tier2_spans):
+        raise _card_error(deck_name, card_index, "Tier-2 spans must appear only in the two answer paragraphs")
+    counts = [sum(span["paragraph"] == paragraph for span in tier2_spans) for paragraph in (0, 1)]
+    if not 2 <= counts[0] <= 4:
+        raise _card_error(deck_name, card_index, "paragraph 1 must contain 2–4 Tier-2 spans")
+    if not 2 <= counts[1] <= 3:
+        raise _card_error(deck_name, card_index, "paragraph 2 must contain 2–3 Tier-2 spans")
+
+    phrases: set[str] = set()
+    colors: dict[str, int] = {color: 0 for color in TIER2_PALETTE}
+    for span in tier2_spans:
+        phrase = span["text"]
+        words = phrase.split()
+        if not 1 <= len(words) <= 4:
+            raise _card_error(deck_name, card_index, "Tier-2 span must contain 1–4 words")
+        normalized_phrase = re.sub(r"\s+", " ", phrase).casefold()
+        if normalized_phrase in phrases:
+            raise _card_error(deck_name, card_index, "Tier-2 phrase is repeated within the card")
+        phrases.add(normalized_phrase)
+        palette_classes = [item.removeprefix("tier2-") for item in span["classes"] if item.startswith("tier2-")]
+        if len(palette_classes) != 1 or span["classes"].count("tier2") != 1:
+            raise _card_error(deck_name, card_index, "Tier-2 span must include exactly one supported color class")
+        color = palette_classes[0]
+        if color not in colors:
+            raise _card_error(deck_name, card_index, f"unsupported Tier-2 color {color!r}")
+        colors[color] += 1
+        if color in TIER2_SECONDARY_COLORS and colors[color] > 1:
+            raise _card_error(deck_name, card_index, f"secondary Tier-2 color '{color}' may appear at most once")
+
+    if len(TIER2_CORE_COLORS.intersection(color for color, count in colors.items() if count)) < 2:
+        raise _card_error(deck_name, card_index, "each card must use at least two core Tier-2 colors")
+
+    visible_paragraphs = [_visible_text(paragraph) for paragraph in paragraphs]
+    visible_chars = len(" ".join(visible_paragraphs))
+    if not 400 <= visible_chars <= 550:
+        raise _card_error(deck_name, card_index, f"visible prose must be 400–550 characters; found {visible_chars}")
+    for index, text in enumerate(visible_paragraphs, start=1):
+        paragraph_chars = len(text)
+        if not 200 <= paragraph_chars <= 275:
+            raise _card_error(deck_name, card_index, f"paragraph {index} visible prose must be 200–275 characters; found {paragraph_chars}")
+        sentences = _sentence_count(text)
+        if not 2 <= sentences <= 3:
+            raise _card_error(deck_name, card_index, f"paragraph {index} must contain 2–3 sentences; found {sentences}")
+
+    return {"visible_chars": visible_chars, "p1_spans": counts[0], "p2_spans": counts[1], "colors": colors}
+
+
 def _recall_hook_matches(back: str) -> list[re.Match[str]]:
     return list(
         re.finditer(
@@ -382,6 +518,7 @@ def validate_normalized_card(card: dict[str, Any], *, deck_name: str, card_index
     paragraph_count = _meaningful_paragraph_count(str(card["back"]))
     if paragraph_count != 2:
         raise _card_error(deck_name, card_index, f"normalized back must contain exactly two meaningful <p> paragraphs; found {paragraph_count}")
+    _validate_tier2_contract(str(card["back"]), deck_name, card_index)
     hooks = _recall_hook_matches(str(card["back"]))
     if len(hooks) != 1 or _recall_hook_color(hooks[0]) not in RECALL_HOOK_COLORS:
         raise _card_error(deck_name, card_index, "normalized card must have exactly one approved Recall hook")
@@ -528,7 +665,7 @@ def cache_path_for(output_file: Path) -> Path:
     return output_file.with_name(f"{output_file.name}{BUILD_CACHE_SUFFIX}")
 
 
-def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
+def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, Any]:
     if "deck_name" not in spec:
         raise KeyError("Missing required field: deck_name")
     if "cards" not in spec:
@@ -547,6 +684,7 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
     tier2_paragraph_2_spans = 0
     tier2_color_spans = {color: 0 for color in TIER2_PALETTE}
     cards_with_key = 0
+    card_metrics: list[dict[str, Any]] = []
     distinct_images: set[str] = set()
 
     for index, entry in enumerate(cards, start=1):
@@ -559,11 +697,14 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
 
         normalized = normalize_card(entry, deck_name=str(spec["deck_name"]), card_index=index)
         back = str(normalized["back"])
-        has_key = '<span class="key">' in back
+        metrics = _validate_tier2_contract(back, str(spec["deck_name"]), index)
+        metrics = {"card": index, **metrics}
+        card_metrics.append(metrics)
+        has_key = bool(re.search(r'class="[^"]*\bkey\b', back))
         if has_key:
             cards_with_key += 1
         paragraph_colors = tier2_colors_by_paragraph(back)
-        paragraph_counts = (len(paragraph_colors[0]), len(paragraph_colors[1]))
+        paragraph_counts = (metrics["p1_spans"], metrics["p2_spans"])
         if any(paragraph_counts):
             cards_with_tier2 += 1
         if all(count > 0 for count in paragraph_counts):
@@ -601,6 +742,7 @@ def inspect_spec(spec: dict[str, Any], spec_dir: Path) -> dict[str, int]:
         "tier2_paragraph_2_spans": tier2_paragraph_2_spans,
         **{f"tier2_{color}_spans": count for color, count in tier2_color_spans.items()},
         "distinct_images": len(distinct_images),
+        "card_metrics": card_metrics,
     }
 
 
@@ -703,6 +845,7 @@ def main() -> int:
         spec["output_file"] = args.output
 
     if args.check:
+        inspect_spec(spec, spec_path.parent)
         if should_skip_creation(spec, spec_path.parent, force=args.force):
             print("Cache hit: deck can be reused. No regeneration needed; billing cost stays at $0.00.")
             return 0
@@ -724,6 +867,13 @@ def main() -> int:
         f"{color} {summary[f'tier2_{color}_spans']}" for color in TIER2_PALETTE
     )
     print(f"Authored tier-2 spans by color: {palette_summary}")
+    print("Per-card metrics:")
+    for card in summary["card_metrics"]:
+        colors = ", ".join(f"{color} {count}" for color, count in card["colors"].items())
+        print(
+            f"Card {card['card']}: visible {card['visible_chars']} chars; "
+            f"P1 {card['p1_spans']} spans; P2 {card['p2_spans']} spans; colors: {colors}"
+        )
     return 0
 
 
