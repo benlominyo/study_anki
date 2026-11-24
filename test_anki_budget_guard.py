@@ -26,6 +26,8 @@ class AuthoringPaletteContractTests(unittest.TestCase):
                 self.assertIn("#7bbddc", content)
                 self.assertIn("at least one purposeful tier-2 span is required in each explanatory paragraph of every card", content)
                 self.assertIn("2–5", content)
+                mentioned_colors = set(re.findall(r"\btier2-([a-z]+)\b", content)) - {"color"}
+                self.assertEqual(mentioned_colors, set(self.PALETTE_NAMES), "the authoring palette must be exactly the eight supported colors")
                 for color in self.PALETTE_NAMES:
                     self.assertIn(color, content)
                 self.assertNotIn("gold", content)
@@ -33,12 +35,10 @@ class AuthoringPaletteContractTests(unittest.TestCase):
                 self.assertNotIn("no per-card quota", content)
 
     def test_authoring_prompt_requires_authored_tier2_and_explains_density(self):
-        prompt = " ".join(
-            (Path(__file__).parent / "ANKI_CARD_GENERATION_PROMPT.md")
-            .read_text(encoding="utf-8")
-            .casefold()
-            .split()
-        )
+        prompt_source = (Path(__file__).parent / "ANKI_CARD_GENERATION_PROMPT.md").read_text(encoding="utf-8")
+        reusable_prompt = re.search(r"````text\n(.*?)\n````", prompt_source, re.DOTALL)
+        self.assertIsNotNone(reusable_prompt, "the complete reusable prompt must be enclosed in a four-backtick fence")
+        prompt = " ".join(reusable_prompt.group(1).casefold().split())
         self.assertIn(
             "at least one purposeful tier-2 span is required in each explanatory paragraph of every card",
             prompt,
@@ -48,6 +48,8 @@ class AuthoringPaletteContractTests(unittest.TestCase):
         self.assertIn("never nest tier-2 spans", prompt)
         self.assertIn("not in the recall hook or nb metadata", prompt)
         self.assertIn("when spans are removed, the prose must remain grammatical", prompt)
+        self.assertIn("before returning the cards, perform this editorial check", prompt)
+        self.assertIn("does every card have at least one purposeful tier-2 span", prompt)
 
     def test_authoring_prompt_demonstrates_valid_tier2_markup(self):
         prompt = (Path(__file__).parent / "ANKI_CARD_GENERATION_PROMPT.md").read_text(encoding="utf-8")
@@ -59,19 +61,27 @@ class AuthoringPaletteContractTests(unittest.TestCase):
         self.assertEqual(len(paragraphs), 2)
         all_colors = []
         for paragraph in paragraphs:
-            spans = re.findall(
-                r'<span class="tier2 tier2-([a-z]+)">(.*?)</span>',
-                paragraph,
-                re.DOTALL,
-            )
+            spans = re.findall(r"<span\b([^>]*)>(.*?)</span>", paragraph, re.DOTALL)
             self.assertTrue(spans, "each explanatory paragraph must demonstrate at least one span")
-            for color, body in spans:
+            self.assertEqual(paragraph.count("<span"), len(spans), "every opening span must be closed and inspected")
+            for attributes, body in spans:
+                class_match = re.search(r'\bclass="([^"]*)"', attributes)
+                self.assertIsNotNone(class_match, "every example span must declare its class list")
+                class_list = class_match.group(1)
+                self.assertRegex(class_list, r"^tier2 tier2-[a-z]+$")
+                color = class_list.removeprefix("tier2 tier2-")
                 self.assertIn(color, self.PALETTE_NAMES)
                 self.assertNotIn("<span", body)
                 all_colors.append(color)
         self.assertGreaterEqual(len(all_colors), 2)
         self.assertLessEqual(len(all_colors), 5)
         self.assertGreaterEqual(len(set(all_colors)), 2)
+
+    def test_template_does_not_offer_noncanonical_highlighting_classes(self):
+        template = (Path(__file__).parent / "DECK_SPEC_TEMPLATE.md").read_text(encoding="utf-8")
+        self.assertNotIn(".key", template)
+        self.assertNotIn("or equivalent", template.casefold())
+        self.assertIn('<span class="tier2 tier2-{color}">', template)
 
 
 class PaletteRenderingTests(unittest.TestCase):

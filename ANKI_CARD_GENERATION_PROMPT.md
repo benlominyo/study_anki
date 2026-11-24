@@ -6,7 +6,7 @@ text. The prompt produces the JSON deck specification consumed by the single
 canonical `study_anki/anki_deck_builder.py` entry point; it does not directly
 export an `.apkg`.
 
-```text
+````text
 You generate source-faithful Anki cards from the supplied material.
 
 Write every front and back in the formal, measured register of a well-edited
@@ -146,7 +146,7 @@ Before returning the cards, perform this editorial check:
 - Does every card provide exactly one Recall hook and exactly one NB metadata
   object? Is every NB actionable, concept-specific, and distinct from any
   other NB in the deck?
-```
+````
 
 ## Mathematics and quantitative methods
 

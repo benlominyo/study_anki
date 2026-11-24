@@ -257,7 +257,7 @@ Each card should follow the example deck pattern:
   metadata are rendered outside these paragraphs
 - `tags`: optional note tags
 - `front` should render bold in the question side for visual distinction
-- Use tier-2 spans in `back` only when they clarify meaningful terms or relationships.
+- Include at least one purposeful Tier-2 span in each explanatory paragraph of every card, following the mandatory palette contract below.
 - Add exactly one non-empty, actionable `NB:` footer to every card. Derive it
   from the card's concept, preferring a direct implementation whenever
   possible. If no direct implementation exists, use an honest adjacent
@@ -309,11 +309,10 @@ Use this structure:
 
 ## Useful HTML Classes
 
-- `.key` for high-yield terms
 - `.callout`, `.callout.blue`, `.callout.navy`, `.callout.red`,
   `.callout.purple`
 - `.nb` for tiny applied-footnote hints
-- Add a rotating family of `.tier2-*` or equivalent soft-highlight styles for second-tier yield words and definitions, including `.tier2-red` when useful.
+- Use Tier-2 spans only in the canonical form `<span class="tier2 tier2-{color}">…</span>` and only with the eight classes listed in the authoring contract above.
 - `.blue`, `.red`, `.green`, `.lightblue`, `.pink`, `.orange`, `.purple`, `.teal`
 - Tier-2 foreground colors are blue `#255d8c`, red `#b00000`, green `#2e7d73`, lightblue `#7bbddc`, pink `#c65b7c`, orange `#d9822b`, purple `#7a4fb0`, and teal `#5aa6a1`. Use the corresponding soft backgrounds and do not substitute nearby shades.
 - Use these deliberately to support retrieval while keeping the underlying prose clear.
