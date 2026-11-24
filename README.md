@@ -65,13 +65,18 @@ success-shaped package containing a malformed card. Each card must have:
 - preserved tags, valid HTML, images, equations, key-term markup, and tier-2
   styling.
 
-The Recall-hook palette is independent from tier-2 highlighting. Use tier-2
-spans selectively for meaningful terms, relationships, contrasts, or lists;
-related terms may share a color, and distinct list items may use different
-colors when that improves retrieval. There is no per-card quota. Use the
-supported blue, red, green, lightblue, pink, orange, purple, and teal classes;
-`lightblue` is `#7bbddc`. The builder preserves supported authored spans and
-reports their distribution without requiring highlights in either paragraph.
+The Recall-hook palette is independent from Tier-2 highlighting. At least one
+purposeful Tier-2 span is required in each explanatory paragraph of every card.
+Aim for typically 2–5 purposeful spans total across both paragraphs; if a
+paragraph has no distinctive technical term, highlight its central concept,
+relationship, contrast, or application rather than leaving it unhighlighted.
+Use only the eight supported classes `tier2-blue`, `tier2-red`, `tier2-green`,
+`tier2-lightblue`, `tier2-pink`, `tier2-orange`, `tier2-purple`, and `tier2-teal`;
+`tier2-lightblue` uses `#7bbddc`. Keep spans out of Recall-hook and NB metadata,
+do not nest them, and ensure the prose remains grammatical when they are
+removed. The builder preserves and reports supported authored spans but
+does not invent or recolor them; the authoring contract must be satisfied
+before building.
 The builder rejects backs with fewer or more than two meaningful `<p>`
 paragraphs. It does not rewrite card meaning, remove valid HTML, or remove
 referenced media.

@@ -282,7 +282,7 @@ Each card should follow the example deck pattern:
   rewrite the authored NB.
 - For opaque technical or scientific terms, try a sound-alike or near-homophone first, then build the picture around that substitute.
 - When the card depends on exact counts, ordered lists, thresholds, or small sequences, consider a phonetic-number or peg-word cue so the numbers themselves become memorable.
-- Use tier-2 spans selectively when they clarify a meaningful term, relationship, contrast, or list. Related terms may share a color; distinct list items may use different colors when that helps retrieval. There is no per-card quota; do not highlight filler or repeat terms for decoration. Author spans as `<span class="tier2 tier2-{color}">…</span>` using `blue`, `red`, `green`, `lightblue`, `pink`, `orange`, `purple`, or `teal`. The `lightblue` foreground is `#7bbddc`; supported authored spans are preserved.
+- At least one purposeful Tier-2 span is required in each explanatory paragraph of every card. Aim for typically 2–5 spans total across both paragraphs. If a paragraph has no distinctive technical term, highlight its central concept, relationship, contrast, or application rather than leaving it unhighlighted. Use only the eight classes `tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`, `tier2-orange`, `tier2-purple`, and `tier2-teal`, in markup of the form `<span class="tier2 tier2-{color}">…</span>`; `tier2-lightblue` is `#7bbddc`. Never use incomplete or unsupported class lists, nest spans, or put markup in Recall-hook/NB metadata. Removing spans must leave grammatical prose. The builder preserves supported authored spans but does not invent or recolor them.
 - Estimate the card budget from distinct concepts supported by the source; do not pad with duplicate, thin, or unsupported cards. Interpret a requested count according to its wording: "exactly N" requires N supported cards, while "at least N" is a floor, not a reason to keep adding weak cards. If an exact count cannot be supported, stop and report the source-supported count instead of fabricating content.
 - Before drafting each card, identify a distinct actionable NB operation. If no direct operation fits, narrow the concept and use a truthful adjacent workflow (inspect, query, visualize, simulate, validate, or transform relevant data); never omit the required NB metadata.
 - Recall hooks must use exactly one of the four approved hook colors: blue,
@@ -316,7 +316,7 @@ Use this structure:
 - Add a rotating family of `.tier2-*` or equivalent soft-highlight styles for second-tier yield words and definitions, including `.tier2-red` when useful.
 - `.blue`, `.red`, `.green`, `.lightblue`, `.pink`, `.orange`, `.purple`, `.teal`
 - Tier-2 foreground colors are blue `#255d8c`, red `#b00000`, green `#2e7d73`, lightblue `#7bbddc`, pink `#c65b7c`, orange `#d9822b`, purple `#7a4fb0`, and teal `#5aa6a1`. Use the corresponding soft backgrounds and do not substitute nearby shades.
-- Use these deliberately, especially when you need to make the recall path obvious.
+- Use these deliberately to support retrieval while keeping the underlying prose clear.
 
 ## Example Card
 

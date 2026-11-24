@@ -39,7 +39,7 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 - Preserve technical notation, units, thresholds, named methods, and causal direction exactly.
 - Use compact Unicode math notation where needed; do not use raw LaTeX.
 - Write exactly two focused `<p>` paragraphs in the authored back. Paragraph 1 states the core definition, model, mechanism, or procedure; paragraph 2 adds a distinct consequence, contrast, limitation, or application. No exceptions.
-- Use tier-2 spans selectively for meaningful terms, relationships, contrasts, or lists. Related terms may share a color; distinct list items may use different colors when that improves retrieval. There is no per-card quota; do not highlight filler or repeat terms for decoration. Use `blue`, `red`, `green`, `lightblue`, `pink`, `orange`, `purple`, or `teal`; `lightblue` is `#7bbddc`. The builder preserves supported authored spans.
+- At least one purposeful Tier-2 span is required in each explanatory paragraph of every card. Aim for typically 2–5 spans total across both paragraphs. If a paragraph has no distinctive technical term, highlight its central concept, relationship, contrast, or application rather than leaving it unhighlighted. Use only `tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`, `tier2-orange`, `tier2-purple`, or `tier2-teal` with the base `tier2` class; `tier2-lightblue` is `#7bbddc`. Keep spans out of Recall-hook and NB metadata, do not nest them, and ensure the prose remains grammatical when they are removed. The builder preserves supported authored spans but does not invent or recolor them.
 
 ## Recall hook rules
 
@@ -68,7 +68,7 @@ Do not place hook or NB content inline in the back. Keep the answer field clean 
 5. Draft the complete deck spec in one pass, using only the canonical JSON shape.
 6. Return only the JSON object; include no preface, progress text, explanation, or trailing commentary.
 7. Make sure every card has exactly two authored `<p>` paragraphs, one recall hook, and one actionable NB. Hook and NB metadata are rendered outside the paragraphs.
-8. Mark key terms and add tier-2 spans only where they improve retrieval; no per-card highlight quota applies. Use the supported palette consistently, including `lightblue` (`#7bbddc`).
+8. Ensure the back has exactly two paragraphs and at least one purposeful Tier-2 span in each; aim for typically 2–5 across the back. Never leave either paragraph unhighlighted, and keep spans out of Recall-hook/NB metadata. The builder preserves authored Tier-2 markup but does not create it.
 9. Use the canonical builder in `study_anki` to validate and export the deck.
 10. If the builder reports a validation problem, correct the failing spec content and retry only the targeted build; do not ask the builder to rewrite content.
 

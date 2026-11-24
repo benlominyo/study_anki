@@ -81,15 +81,36 @@ commentary. Put the two authored prose paragraphs in `back`; keep Recall hook
 and NB content in their metadata fields so the builder can render each once
 outside those paragraphs.
 
-Use tier-2 spans selectively when they make a meaningful term, relationship,
-contrast, or list easier to retrieve. Related terms may share a color; distinct
-items in a comma-separated list may use different colors when that distinction
-helps. There is no per-card quota: do not color incidental words, add filler,
-or repeat terms for decoration. Author spans as
-`<span class="tier2 tier2-{color}">…</span>` using only `blue`, `red`, `green`,
-`lightblue`, `pink`, `orange`, `purple`, or `teal`. The `lightblue` foreground
-is `#7bbddc`. The builder preserves supported authored spans and does not add
-or recolor them.
+Tier-2 authoring is mandatory. At least one purposeful Tier-2 span is required
+in each explanatory paragraph of every card. Do not leave either paragraph
+unhighlighted. Aim for typically 2–5 purposeful spans total across both
+paragraphs; this is a density guide, not an upper limit. If a paragraph has no
+distinctive technical term, highlight its central concept, relationship,
+contrast, or application rather than leaving it unhighlighted or coloring
+incidental filler. Related terms may share a color; distinct items in a
+parallel list may use different colors when that improves retrieval.
+
+Use only these eight colors with the base `tier2` class:
+`tier2-blue`, `tier2-red`, `tier2-green`, `tier2-lightblue`, `tier2-pink`,
+`tier2-orange`, `tier2-purple`, and `tier2-teal`; `tier2-lightblue` uses the
+foreground `#7bbddc`. Author spans as
+`<span class="tier2 tier2-{color}">…</span>`. Never use incomplete or unsupported
+class lists, never nest Tier-2 spans, and keep spans only inside the two answer
+paragraphs—not in the Recall hook or NB metadata. When spans are removed, the
+prose must remain grammatical and formal. The builder preserves supported
+authored spans and does not invent or recolor them.
+
+Preferred PHM4510 example (adapted from the real additive-interindividual-
+variability card):
+
+```html
+<p>In the additive form, an individual parameter is written as
+<span class="tier2 tier2-blue">P = TVP + ETA</span>, so the random effect
+enters on an <span class="tier2 tier2-purple">absolute scale</span>.</p>
+<p>This form can represent parameters that
+<span class="tier2 tier2-teal">increase or decrease around the typical value</span>,
+but it can also yield <span class="tier2 tier2-orange">negative PK values</span>.</p>
+```
 
 Card-budget gate: derive the deck size from distinct concepts actually supported
 by the source; do not pad the deck with duplicates, thin paraphrases, or
@@ -109,6 +130,12 @@ how many concepts the source supports.
 Before returning the cards, perform this editorial check:
 - Is each front a complete, context-complete question?
 - Does each back state one unambiguous fact or concept?
+- Does every card have at least one purposeful Tier-2 span in each of its two
+  explanatory paragraphs? Never leave either paragraph unhighlighted.
+- Are all Tier-2 classes from the exact eight-color palette, with no nested
+  spans and no markup in Recall-hook or NB metadata?
+- When the spans are removed, does each paragraph remain grammatical and
+  formal?
 - Does the front avoid answer leakage?
 - Would the wording be acceptable in a carefully edited textbook?
 - Have casual phrases and sentence fragments been replaced without changing

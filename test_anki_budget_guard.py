@@ -1,4 +1,5 @@
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,19 +17,61 @@ class AuthoringPaletteContractTests(unittest.TestCase):
     )
     PALETTE_NAMES = ("blue", "red", "green", "lightblue", "pink", "orange", "purple", "teal")
 
-    def test_authoring_docs_use_the_canonical_lightblue_palette_without_quotas(self):
+    def test_authoring_docs_require_both_paragraphs_and_canonical_palette(self):
         root = Path(__file__).parent
         for name in self.DOC_NAMES:
             with self.subTest(document=name):
-                content = (root / name).read_text(encoding="utf-8").casefold()
+                content = " ".join((root / name).read_text(encoding="utf-8").casefold().split())
                 self.assertIn("lightblue", content)
                 self.assertIn("#7bbddc", content)
-                self.assertIn("no per-card quota", content)
+                self.assertIn("at least one purposeful tier-2 span is required in each explanatory paragraph of every card", content)
+                self.assertIn("2–5", content)
                 for color in self.PALETTE_NAMES:
                     self.assertIn(color, content)
-                self.assertNotIn("two or three", content)
-                self.assertNotIn("at least one distinct", content)
+                self.assertNotIn("gold", content)
                 self.assertNotRegex(content, r"bold[- ]red|answer[- ]target|answer target")
+                self.assertNotIn("no per-card quota", content)
+
+    def test_authoring_prompt_requires_authored_tier2_and_explains_density(self):
+        prompt = " ".join(
+            (Path(__file__).parent / "ANKI_CARD_GENERATION_PROMPT.md")
+            .read_text(encoding="utf-8")
+            .casefold()
+            .split()
+        )
+        self.assertIn(
+            "at least one purposeful tier-2 span is required in each explanatory paragraph of every card",
+            prompt,
+        )
+        self.assertIn("typically 2–5 purposeful spans total", prompt)
+        self.assertIn("do not leave either paragraph unhighlighted", prompt)
+        self.assertIn("never nest tier-2 spans", prompt)
+        self.assertIn("not in the recall hook or nb metadata", prompt)
+        self.assertIn("when spans are removed, the prose must remain grammatical", prompt)
+
+    def test_authoring_prompt_demonstrates_valid_tier2_markup(self):
+        prompt = (Path(__file__).parent / "ANKI_CARD_GENERATION_PROMPT.md").read_text(encoding="utf-8")
+        match = re.search(r"Preferred PHM4510 example.*?```html\n(.*?)```", prompt, re.DOTALL)
+        self.assertIsNotNone(match, "a preferred PHM4510-derived HTML example is required")
+        example = match.group(1)
+        self.assertIn("P = TVP + ETA", example)
+        paragraphs = re.findall(r"<p>(.*?)</p>", example, re.DOTALL)
+        self.assertEqual(len(paragraphs), 2)
+        all_colors = []
+        for paragraph in paragraphs:
+            spans = re.findall(
+                r'<span class="tier2 tier2-([a-z]+)">(.*?)</span>',
+                paragraph,
+                re.DOTALL,
+            )
+            self.assertTrue(spans, "each explanatory paragraph must demonstrate at least one span")
+            for color, body in spans:
+                self.assertIn(color, self.PALETTE_NAMES)
+                self.assertNotIn("<span", body)
+                all_colors.append(color)
+        self.assertGreaterEqual(len(all_colors), 2)
+        self.assertLessEqual(len(all_colors), 5)
+        self.assertGreaterEqual(len(set(all_colors)), 2)
 
 
 class PaletteRenderingTests(unittest.TestCase):
@@ -236,7 +279,7 @@ class BudgetGuardTests(unittest.TestCase):
             self.assertEqual(summary["cards"], 1)
 
     def test_normalization_rejects_missing_paragraph(self):
-        with self.assertRaisesRegex(CardValidationError, "at least two meaningful"):
+        with self.assertRaisesRegex(CardValidationError, "exactly two meaningful"):
             with tempfile.TemporaryDirectory() as tmpdir:
                 build_deck(
                     {
